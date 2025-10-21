@@ -10,7 +10,7 @@ def main():
     running = True
     dt = 0
 
-    coastlines = svg_to_points('coastlines/svg/test.svg', step=1, scale=0.8)
+    coastlines = svg_to_points('coastlines/svg/islands.svg', step=1, scale=1.2)
 
     ships = [Ship(300, 300)]
 
