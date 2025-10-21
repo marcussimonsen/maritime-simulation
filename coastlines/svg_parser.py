@@ -10,9 +10,9 @@ def svg_to_points(svg_path, scale=1, step=1):
     svg_path : str
         The file path to the SVG file to be converted.
     scale : float, optional
-        A scaling factor to apply to each path (default is 1).
+        A scaling factor to apply to the svg.
     step : int, optional
-        Resolution is equal to 1/step. Increasing this number results in lower resolution. (default is 1)
+        Resolution is equal to 1/step.
 
     Returns
     -------
