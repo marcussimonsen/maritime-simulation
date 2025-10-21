@@ -1,5 +1,6 @@
 import pygame
 from ship import *
+from coastlines.svg_parser import svg_to_points
 
 
 def main():
@@ -9,7 +10,7 @@ def main():
     running = True
     dt = 0
 
-    coastline = [(0, 0), (200, -30), (180, 50), (100, 100), (120, 200), (110, 300), (170, 500), (100, 600), (90, 800), (0, 720)]
+    coastlines = svg_to_points('coastlines/svg/test.svg', step=1, scale=0.7)
 
     ships = [Ship(300, 300)]
 
@@ -20,7 +21,8 @@ def main():
 
         screen.fill((0, 105, 148))
 
-        pygame.draw.polygon(screen, (228, 200, 148), coastline)
+        for c in coastlines:
+            pygame.draw.polygon(screen, (228, 200, 148), c)
 
         for ship in ships:
             ship.draw(screen)
