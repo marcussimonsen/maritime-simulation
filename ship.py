@@ -36,12 +36,13 @@ class Ship:
 
         self.rect = pygame.Rect(self.x, self.y, 10, 20)
 
-    def draw(self, surface):
+    def draw(self, surface, debug_draw=False):
         rect = pygame.Rect(self.x, self.y, 10, 20)
         pygame.draw.rect(surface, "black", rect)
 
         # Debug velocity draw
-        pygame.draw.line(surface, "green", (self.x, self.y), (self.x + self.vx * 30, self.y + self.vy * 30))
+        if debug_draw:
+            pygame.draw.line(surface, "green", (self.x, self.y), (self.x + self.vx * 30, self.y + self.vy * 30))
 
     def boundary_update(self, w, h):
         if self.x > w - MARGIN:
@@ -53,7 +54,7 @@ class Ship:
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
 
-    def move(self, ships, coastlines, surface):
+    def move(self, ships, coastlines, surface=None):
         vx = 0
         vy = 0
         for coastline in coastlines:
@@ -71,7 +72,6 @@ class Ship:
                     else:
                         x = p2[0]
                         y = p2[1]
-                    pygame.draw.circle(surface, "red", (x, y), 3)
                 elif x > max(p1[0], p2[0]):
                     if p1[0] > p2[0]:
                         x = p1[0]
@@ -79,9 +79,6 @@ class Ship:
                     else:
                         x = p2[0]
                         y = p2[1]
-                    pygame.draw.circle(surface, "red", (x, y), 3)
-                else:
-                    pygame.draw.circle(surface, "green", point, 3)
 
                 point = x, y
 
@@ -89,9 +86,12 @@ class Ship:
                 if distance(point, (self.x, self.y)) > RANGE:
                     continue
 
-                pygame.draw.line(surface, "red", p1, p2)
+                if surface is not None:
+                    pygame.draw.circle(surface, "red", point, 3)
 
-                pygame.draw.line(surface, "white", (self.x, self.y), point)
+                if surface is not None:
+                    pygame.draw.line(surface, "red", p1, p2)
+                    pygame.draw.line(surface, "white", (self.x, self.y), point)
 
                 # Steer away from coastline
                 vx += self.x - x
@@ -103,7 +103,8 @@ class Ship:
             vx = vx / mag * 100
             vy = vy / mag * 100
 
-        pygame.draw.line(surface, "yellow", (self.x, self.y), (self.x + vx * 1, self.y + vy * 1))
+        if surface is not None:
+            pygame.draw.line(surface, "yellow", (self.x, self.y), (self.x + vx * 1, self.y + vy * 1))
 
         # Apply coastline effect
         self.vx += vx * COASTLINE_TURN_FACTOR

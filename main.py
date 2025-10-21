@@ -1,6 +1,7 @@
 import pygame
 from ship import *
 from coastlines.svg_parser import svg_to_points
+import random
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
 
         for ship in ships:
             ship.boundary_update(1280, 720)
-            ship.move(ships, coastlines, screen)
+            ship.move(ships, coastlines, surface=screen)
 
         for ship in ships:
             ship.draw(screen)
