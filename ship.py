@@ -7,6 +7,9 @@ MARGIN = 50
 RANGE = 100
 MAX_VELOCITY = .9
 
+SHIP_WIDTH = 10
+SHIP_LENGTH = 20
+
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
     b = p1[1] - a * p1[0]
@@ -35,7 +38,7 @@ class Ship:
         self.vy = -1
 
     def draw(self, surface, debug_draw=False):
-        rect = pygame.Rect(self.x, self.y, 10, 20)
+        rect = pygame.Rect(self.x - SHIP_WIDTH / 2, self.y - SHIP_LENGTH / 2, SHIP_WIDTH, SHIP_LENGTH)
         pygame.draw.rect(surface, "black", rect)
 
         # Debug velocity draw
