@@ -97,8 +97,10 @@ class Ship:
                 vx += self.x - x
                 vy += self.y - y
 
+        # NOTE: This is here because it is weird that further away gives stronger force
+        # This gives constant force
+        # Also good, since force then won't depend on granularity of coastline
         mag = math.sqrt(vx ** 2 + vy ** 2)
-
         if mag != 0:
             vx = vx / mag * 100
             vy = vy / mag * 100
