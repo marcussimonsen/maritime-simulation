@@ -1,6 +1,7 @@
 import pygame
 from ship import *
 from coastlines.svg_parser import svg_to_points
+import random
 
 
 def main():
@@ -10,9 +11,11 @@ def main():
     running = True
     dt = 0
 
-    coastlines = svg_to_points('coastlines/svg/islands.svg', step=1, scale=1.2)
+    coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
-    ships = [Ship(300, 300)]
+    ships = []
+    for _ in range(10):
+        ships.append(Ship(random.randint(100, 1000), random.randint(100, 600)))
 
     while running:
         for event in pygame.event.get():
@@ -23,6 +26,10 @@ def main():
 
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
+
+        for ship in ships:
+            ship.boundary_update(1280, 720)
+            ship.move(ships, coastlines, surface=screen)
 
         for ship in ships:
             ship.draw(screen)
