@@ -6,9 +6,10 @@ COASTLINE_TURN_FACTOR = 0.0001
 MARGIN = 50
 RANGE = 100
 MAX_VELOCITY = .9
+# TODO: If ship velocity is this high, ship can clip through coastlines
 
-SHIP_WIDTH = 10
-SHIP_LENGTH = 20
+SHIP_WIDTH = 5
+SHIP_LENGTH = 10
 
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
@@ -38,29 +39,30 @@ class Ship:
         self.vy = -1
 
 
-    # TODO: Fix so rotation and scale is not off
+    # Draw the ship at its current position and orientation
     def draw(self, surface, debug_draw=False):
-        # Ship rect
-        rect = pygame.Rect(-SHIP_WIDTH / 2, -SHIP_LENGTH / 2, SHIP_WIDTH, SHIP_LENGTH)
+        # Create a ship surface with the long axis along +X (nose to the right)
+        ship_surf = pygame.Surface((SHIP_LENGTH, SHIP_WIDTH), pygame.SRCALPHA)
+        # Draw the ship rect, get.rect() to fill the entire surface
+        pygame.draw.rect(ship_surf, "black", ship_surf.get_rect())
 
-        # Calculate angle in degrees of ship based on velocity
-        angle = math.atan2(self.vy, math.sqrt(self.vx ** 2 + self.vy ** 2))
-        angle = math.degrees(angle) + 90.
+        # Compute angle so the nose points along velocity (screen coords: y increases downward)
+        if self.vx == 0 and self.vy == 0:
+            angle_deg = 0.0
+        else:
+            angle_deg = math.degrees(math.atan2(-self.vy, self.vx))
 
-        # Create surface and draw the ship rect to that surface
-        rect_surface = pygame.Surface((SHIP_WIDTH/2, SHIP_LENGTH/2), pygame.SRCALPHA)
-        pygame.draw.rect(rect_surface, "black", rect)
+        # Rotate and blit centered at (self.x, self.y)
+        rotated = pygame.transform.rotate(ship_surf, angle_deg)
+        rotated_rect = rotated.get_rect(center=(self.x, self.y))
+        surface.blit(rotated, rotated_rect.topleft)
 
-        # Rotate surface according to the angle
-        rotated_surface = pygame.transform.rotate(rect_surface, angle)
-
-        # Draw rotated surface onto the screen "main" surface
-        surface.blit(rotated_surface, (self.x, self.y))
-
-        # Debug velocity draw
+        # Optional debug velocity vector
         if debug_draw:
             pygame.draw.line(surface, "green", (self.x, self.y), (self.x + self.vx * 30, self.y + self.vy * 30))
 
+
+    # Update velocity to stay within boundaries
     def boundary_update(self, w, h):
         if self.x > w - MARGIN:
             self.vx -= TURN_FACTOR
@@ -71,6 +73,7 @@ class Ship:
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
 
+    # Move ship, avoiding coastlines
     def move(self, ships, coastlines, surface=None):
         vx = 0
         vy = 0
