@@ -37,9 +37,25 @@ class Ship:
         self.vx = -1
         self.vy = -1
 
+
+    # TODO: Fix so rotation and scale is not off
     def draw(self, surface, debug_draw=False):
-        rect = pygame.Rect(self.x - SHIP_WIDTH / 2, self.y - SHIP_LENGTH / 2, SHIP_WIDTH, SHIP_LENGTH)
-        pygame.draw.rect(surface, "black", rect)
+        # Ship rect
+        rect = pygame.Rect(-SHIP_WIDTH / 2, -SHIP_LENGTH / 2, SHIP_WIDTH, SHIP_LENGTH)
+
+        # Calculate angle in degrees of ship based on velocity
+        angle = math.atan2(self.vy, math.sqrt(self.vx ** 2 + self.vy ** 2))
+        angle = math.degrees(angle) + 90.
+
+        # Create surface and draw the ship rect to that surface
+        rect_surface = pygame.Surface((SHIP_WIDTH/2, SHIP_LENGTH/2), pygame.SRCALPHA)
+        pygame.draw.rect(rect_surface, "black", rect)
+
+        # Rotate surface according to the angle
+        rotated_surface = pygame.transform.rotate(rect_surface, angle)
+
+        # Draw rotated surface onto the screen "main" surface
+        surface.blit(rotated_surface, (self.x, self.y))
 
         # Debug velocity draw
         if debug_draw:
