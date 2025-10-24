@@ -1,10 +1,10 @@
+import pygame
+
 class Port:
-    def __init__(self, x, y):
+    def __init__(self, x, y, capacity):
         self.x = x
         self.y = y
-        self.rect = pygame.Rect(self.x, self.y, 10, 20)
+        self.capacity = capacity
 
-    def draw(self, surface, debug_draw=False):
-        rect = pygame.Rect(self.x, self.y, 10, 20)
-        pygame.draw.rect(surface, "black", rect)
-
+    def draw(self, surface):
+        pygame.draw.circle(surface, (255, 0, 0), (self.x, self.y), 10)

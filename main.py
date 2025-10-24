@@ -1,5 +1,6 @@
 import pygame
 from ship import *
+from port import *
 from coastlines.svg_parser import svg_to_points
 import random
 
@@ -17,6 +18,8 @@ def main():
     for _ in range(10):
         ships.append(Ship(random.randint(100, 1000), random.randint(100, 600)))
 
+    ports = [Port(10, 20, 10)]
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -33,6 +36,9 @@ def main():
 
         for ship in ships:
             ship.draw(screen)
+
+        for port in ports:
+            port.draw(screen)
 
         # Render stuff here
 
