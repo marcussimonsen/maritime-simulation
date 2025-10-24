@@ -13,12 +13,17 @@ def main():
     dt = 0
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
+    print(coastlines[0])
 
     ships = []
     for _ in range(10):
         ships.append(Ship(random.randint(100, 1000), random.randint(100, 600)))
 
-    ports = [Port(10, 20, 10)]
+    ports = []
+    for polygon in coastlines:
+        for _ in range(2):
+            x, y = random.choice(polygon)
+            ports.append(Port(x, y, 10))
 
     while running:
         for event in pygame.event.get():
