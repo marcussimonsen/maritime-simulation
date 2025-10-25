@@ -1,7 +1,7 @@
 from svgpathtools import svg2paths
 
 
-def svg_to_points(svg_path, scale=1, step=1):
+def svg_to_points(svg_path: str, scale: float = 1.0, step: int = 1):
     """
     Convert a simple SVG file into a list of points.
 
@@ -20,7 +20,7 @@ def svg_to_points(svg_path, scale=1, step=1):
         A list where each element corresponds to a path in the SVG.
         Each path is represented as a list of (x, y) tuples
     """
-    paths, _ = svg2paths(svg_path)
+    paths, *_ = svg2paths(svg_path)
     all_points = []
     for path in paths:
         path_points = []

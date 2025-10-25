@@ -3,7 +3,6 @@ from ship import *
 from port import *
 from coastlines.svg_parser import svg_to_points
 import random
-from types import SimpleNamespace
 from spawn_utils import spawn_not_in_coastlines, build_occupancy_grid, spawn_from_free_cells
 
 
@@ -68,7 +67,6 @@ def main():
                 if event.key == pygame.K_DOWN:
                     if capacity_index == 0:
                         capacity_index = len(capacities) - 1
-                        print(capacity_index)
                     else:
                         capacity_index = capacity_index - 1
 
@@ -99,8 +97,7 @@ def main():
 
         for port in ports:
             port.draw(screen)
-
-        # Render stuff here
+            port.dock_nearby_ships(ships)
 
         if show_info_box:
             box_width, box_height = 250, 100

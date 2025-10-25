@@ -75,7 +75,7 @@ def build_occupancy_grid(coastlines: List[Polygon], width: int, height: int,
 
 def spawn_from_free_cells(free_cells: List[Tuple[int,int]], cell_size: int,
                           width: int, height: int,
-                          coastline_mask: "pygame.Mask" = None,
+                          coastline_mask: pygame.Mask | None = None,
                           ship_radius: int = 0,
                           max_attempts: int = 1000) -> Point:
     """Pick a random free cell and return a random point inside that cell.

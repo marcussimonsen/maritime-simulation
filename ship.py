@@ -37,10 +37,14 @@ class Ship:
         self.y = y
         self.vx = -1
         self.vy = -1
+        self.docked = False
 
 
     # Draw the ship at its current position and orientation
     def draw(self, surface, debug_draw=False):
+        if (self.docked):
+            return
+
         # Create a ship surface with the long axis along +X (nose to the right)
         ship_surf = pygame.Surface((SHIP_LENGTH, SHIP_WIDTH), pygame.SRCALPHA)
         # Draw the ship rect, get.rect() to fill the entire surface
@@ -75,6 +79,9 @@ class Ship:
 
     # Move ship, avoiding coastlines
     def move(self, ships, coastlines, surface=None):
+        if self.docked:
+            return
+
         vx = 0
         vy = 0
         for coastline in coastlines:
@@ -140,3 +147,11 @@ class Ship:
 
         self.x += self.vx
         self.y += self.vy
+
+    def dock_at_port(self, port):
+        self.docked = True
+        self.vx = 0
+        self.vy = 0
+        self.x = port.x
+        self.y = port.y
+
