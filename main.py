@@ -23,6 +23,7 @@ def get_closest_coastpoint(coastlines):
 
 def main():
     pygame.init()
+    pygame.font.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
     running = True
@@ -66,7 +67,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if port_mode:
                     closest_coastpoint = get_closest_coastpoint(coastlines)
-                    ports.append(Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index]))
+                    ports.append(Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=capacities[capacity_index]))
 
         screen.fill((0, 105, 148))
 

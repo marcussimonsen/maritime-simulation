@@ -10,6 +10,11 @@ class Port:
 
     def draw(self, surface):
         pygame.draw.circle(surface, (255, 0, 0), (self.x, self.y), self.radius)
+        text = pygame.font.SysFont(None, 24).render(f'{len(self.docked_ships)}/{self.capacity}', False, (0, 0, 0))
+        surface.blit(text, (self.x + self.radius + 5, self.y - self.radius))
+
+
+
     
     def dock_nearby_ships(self, ships):
         for ship in ships:
