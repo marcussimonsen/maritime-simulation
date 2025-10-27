@@ -1,7 +1,10 @@
-import pygame
-from ship import *
-from coastlines.svg_parser import svg_to_points
 import random
+
+import pygame
+
+from coastlines.svg_parser import svg_to_points
+from ship import Ship
+from spawn_utils import spawn_not_in_coastlines
 
 
 def main():
@@ -15,7 +18,8 @@ def main():
 
     ships = []
     for _ in range(10):
-        ships.append(Ship(random.randint(100, 1000), random.randint(100, 600)))
+        x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
+        ships.append(Ship(x, y))
 
     while running:
         for event in pygame.event.get():
