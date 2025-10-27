@@ -1,9 +1,12 @@
-import pygame
-from ship import *
-from port import *
-from coastlines.svg_parser import svg_to_points
 import random
-from spawn_utils import spawn_not_in_coastlines, build_occupancy_grid, spawn_from_free_cells
+
+import pygame
+
+from coastlines.svg_parser import svg_to_points
+from port import *
+from ship import *
+from spawn_utils import (build_occupancy_grid, spawn_from_free_cells,
+                         spawn_not_in_coastlines)
 
 
 def main():
@@ -12,6 +15,7 @@ def main():
     screen = pygame.display.set_mode((screen_width, screen_height))
     clock = pygame.time.Clock()
     running = True
+    ship_sur = True
     dt = 0
 
     port_mode = False
@@ -25,7 +29,7 @@ def main():
 
     # Option A: use point-in-polygon sampler
     ships = []
-    for _ in range(10):
+    for _ in range(200):
         x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
         ships.append(Ship(x, y))
 
@@ -62,6 +66,8 @@ def main():
                     running = False
                 if event.key == pygame.K_p:
                     port_mode = not port_mode
+                if event.key == pygame.K_d:
+                    ship_sur = not ship_sur
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -90,7 +96,7 @@ def main():
 
         for ship in ships:
             ship.boundary_update(1280, 720)
-            ship.move(ships, coastlines, surface=screen)
+            ship.move(ships, coastlines, surface=screen if ship_sur else None)
 
         for ship in ships:
             ship.draw(screen)

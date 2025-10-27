@@ -2,9 +2,9 @@ import pygame
 import math
 
 TURN_FACTOR = .1
-COASTLINE_TURN_FACTOR = 0.0001
-MARGIN = 50
-RANGE = 100
+COASTLINE_TURN_FACTOR = 0.0005
+MARGIN = 20
+RANGE = 20
 MAX_VELOCITY = .9
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
