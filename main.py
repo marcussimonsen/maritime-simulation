@@ -7,21 +7,31 @@ from port import Port
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
 
+SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
+
+def get_closest_coastpoint(coastlines):
+    x, y = pygame.mouse.get_pos()
+    closest_point = (0,0)
+    min_dist = float('inf')
+    for coastline in coastlines:
+        for point in coastline:
+            dist = ((point[0] - x) ** 2 + (point[1] - y) ** 2) ** 0.5
+            if dist < min_dist:
+                min_dist = dist
+                closest_point = point
+    return closest_point
 
 def main():
     pygame.init()
-    screen_width, screen_height = 1280, 720
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
     running = True
-    ship_sur = True
+    show_ship_sensors = True
     dt = 0
 
     port_mode = False
     capacities = [10, 20, 30]
     capacity_index = 0
-
-    show_info_box = True
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
@@ -47,27 +57,16 @@ def main():
                 if event.key == pygame.K_p:
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
-                    ship_sur = not ship_sur
+                    show_ship_sensors = not show_ship_sensors
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
-                    if capacity_index == 0:
-                        capacity_index = len(capacities) - 1
-                    else:
-                        capacity_index = capacity_index - 1
+                    capacity_index = (capacity_index-1) % len(capacities)
 
-            if event.type == pygame.MOUSEBUTTONDOWN and port_mode:
-                x, y = pygame.mouse.get_pos()
-                closest_point = (0,0)
-                min_dist = float('inf')
-                for coastline in coastlines:
-                    for point in coastline:
-                        dist = ((point[0] - x) ** 2 + (point[1] - y) ** 2) ** 0.5
-                        if dist < min_dist:
-                            min_dist = dist
-                            closest_point = point
-                ports.append(Port(closest_point[0], closest_point[1], capacities[capacity_index]))
-                
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if port_mode:
+                    closest_coastpoint = get_closest_coastpoint(coastlines)
+                    ports.append(Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index]))
 
         screen.fill((0, 105, 148))
 
@@ -76,34 +75,24 @@ def main():
 
         for ship in ships:
             ship.boundary_update(1280, 720)
-            ship.move(ships, coastlines, surface=screen if ship_sur else None)
-
-        for ship in ships:
+            ship.move(ships, coastlines, surface=screen if show_ship_sensors else None)
             ship.draw(screen)
 
         for port in ports:
-            port.draw(screen)
             port.dock_nearby_ships(ships)
+            port.draw(screen)
 
-        if show_info_box:
-            box_width, box_height = 250, 100
-            info_box = pygame.Surface((box_width, box_height))
-            info_box.set_alpha(200)
-            info_box.fill((50, 50, 50))
-            screen.blit(info_box, (screen_width - box_width - 10, 10))
+        if port_mode:
+            point = get_closest_coastpoint(coastlines)
+            radius = capacities[capacity_index]
 
-            font = pygame.font.SysFont(None, 24)
-            mode_text = "Port Mode: ON" if port_mode else "Port Mode: OFF"
-            mode_surface = font.render(mode_text, True, (255, 255, 255))
-            screen.blit(mode_surface, (screen_width - box_width, 20))
-
-            capacity_text = f"Port Capacity: {capacities[capacity_index]}"
-            capacity_surface = font.render(capacity_text, True, (255, 255, 255))
-            screen.blit(capacity_surface, (screen_width - box_width, 50))
-
+            circle_surf = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)   
+            pygame.draw.circle(circle_surf, (255, 0, 0, 128), (radius, radius), radius)
+            pygame.draw.line(screen, (255, 0, 0, 0.5), pygame.mouse.get_pos(), point)
+            screen.blit(circle_surf, (point[0] - radius, point[1] - radius))
 
         pygame.display.flip()
-        dt = clock.tick(60) / 1000 # limits FPS and
+        dt = clock.tick(60) / 1000 # limits FPS, dt is time since last frame
     pygame.quit()
 
 if __name__ == "__main__":
