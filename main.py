@@ -37,7 +37,7 @@ def main():
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
     ships = []
-    for _ in range(200):
+    for _ in range(100):
         x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
         ships.append(Ship(x, y))
 
@@ -76,6 +76,7 @@ def main():
 
         for ship in ships:
             ship.boundary_update(1280, 720)
+            ship.flocking(ships)
             ship.move(ships, coastlines, surface=screen if show_ship_sensors else None)
             ship.draw(screen)
 

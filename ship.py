@@ -1,15 +1,25 @@
 import pygame
 import math
 
+from reynold import separation, cohesion, alignment
+
 TURN_FACTOR = .1
-COASTLINE_TURN_FACTOR = 0.0005
-MARGIN = 20
-RANGE = 20
+COASTLINE_TURN_FACTOR = 0.01
+MARGIN = 0
+RANGE = 30
 MAX_VELOCITY = .9
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
 SHIP_WIDTH = 5
 SHIP_LENGTH = 10
+
+SEPARATION_DISTANCE = 20
+ALIGNMENT_DISTANCE = 80
+COHESION_DISTANCE = 80
+
+SEPARATION_FACTOR = 0.05
+ALIGNMENT_FACTOR = 0.005
+COHESION_FACTOR = 0.002
 
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
@@ -76,6 +86,31 @@ class Ship:
             self.vx += TURN_FACTOR
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
+
+    def flocking(self, ships):
+        separation_neighbors = []
+        alignment_neighbors = []
+        cohesion_neighbors = []
+
+        for other in ships:
+            if other is self:
+                continue
+
+            d = distance((self.x, self.y), (other.x, other.y))
+            if d < SEPARATION_DISTANCE:
+                separation_neighbors.append(other)
+            if d < ALIGNMENT_DISTANCE:
+                alignment_neighbors.append(other)
+            if d < COHESION_DISTANCE:
+                cohesion_neighbors.append(other)
+
+        separation_vector = separation(self, separation_neighbors)
+        alignment_vector = alignment(self, alignment_neighbors)
+        cohesion_vector = cohesion(self, cohesion_neighbors)
+
+        self.vx += separation_vector[0] * SEPARATION_FACTOR + (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR + (cohesion_vector[0] - self.x) * COHESION_FACTOR
+        self.vy += separation_vector[1] * SEPARATION_FACTOR + (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR + (cohesion_vector[1] - self.y) * COHESION_FACTOR
+
 
     # Move ship, avoiding coastlines
     def move(self, ships, coastlines, surface=None):
