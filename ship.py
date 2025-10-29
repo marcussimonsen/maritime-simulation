@@ -2,6 +2,7 @@ import pygame
 import math
 
 from reynold import separation, cohesion, alignment
+import route
 
 TURN_FACTOR = .1
 COASTLINE_TURN_FACTOR = 0.01
@@ -20,6 +21,7 @@ COHESION_DISTANCE = 80
 SEPARATION_FACTOR = 0.05
 ALIGNMENT_FACTOR = 0.005
 COHESION_FACTOR = 0.002
+ROUTE_FACTOR = 0.001
 
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
@@ -35,6 +37,15 @@ def closest_point(line, point):
 
     return x, y
 
+def is_point_inside_segment(line_p1, line_p2, p3):
+    # NOTE: maybe we should check distance by radius from point
+
+    is_x_inside = p3[0] > min(line_p1[0], line_p2[0]) and p3[0] < max(line_p1[0], line_p2[0]) 
+    is_y_inside = p3[1] > min(line_p1[1], line_p2[1]) and p3[1] < max(line_p1[1], line_p2[1])
+
+    return is_x_inside or is_y_inside # technically should be 'and', but shouldn't be a problem
+
+
 def distance(point_a, point_b):
     ax, ay = point_a
     bx, by = point_b
@@ -42,13 +53,16 @@ def distance(point_a, point_b):
 
 
 class Ship:
-    def __init__(self, x, y):
+    def __init__(self, x, y, route=None):
         self.x = x
         self.y = y
         self.vx = -1
         self.vy = -1
         self.docked = False
+        self.route = route
 
+    def set_route(self, route):
+        self.route = route
 
     # Draw the ship at its current position and orientation
     def draw(self, surface, debug_draw=False):
@@ -110,6 +124,22 @@ class Ship:
 
         self.vx += separation_vector[0] * SEPARATION_FACTOR + (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR + (cohesion_vector[0] - self.x) * COHESION_FACTOR
         self.vy += separation_vector[1] * SEPARATION_FACTOR + (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR + (cohesion_vector[1] - self.y) * COHESION_FACTOR
+
+    def follow_route(self):
+        if self.route is None:
+            return
+
+        if len(self.route) >= 2:
+            p1 = self.route[-1]
+            p2 = self.route[-2]
+        
+            if is_point_inside_segment(p1, p2, (self.x, self.y)):
+                self.route.pop()
+        
+        dx, dy = route.find_velocity(self.route, (self.x, self.y))
+
+        self.vx += dx * ROUTE_FACTOR
+        self.vy += dy * ROUTE_FACTOR
 
 
     # Move ship, avoiding coastlines
