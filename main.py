@@ -6,8 +6,10 @@ from coastlines.svg_parser import svg_to_points
 from port import Port
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
+from route import draw_route
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
+route = [(100,350), (150,350), (350, 250), (450, 500), (650, 500), (700, 300), (1200, 300)]
 
 def get_closest_coastpoint(coastlines):
     x, y = pygame.mouse.get_pos()
@@ -73,6 +75,8 @@ def main():
 
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
+
+        draw_route(screen, route)
 
         for ship in ships:
             ship.boundary_update(1280, 720)
