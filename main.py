@@ -81,7 +81,7 @@ def main():
         for ship in ships:
             ship.boundary_update(1280, 720)
             ship.flocking(ships)
-            ship.follow_route()
+            ship.follow_route(surface=screen if show_ship_sensors else None)
             ship.move(ships, coastlines, surface=screen if show_ship_sensors else None)
             ship.draw(screen)
 

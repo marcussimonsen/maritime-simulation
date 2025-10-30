@@ -7,8 +7,8 @@ import route
 TURN_FACTOR = .1
 COASTLINE_TURN_FACTOR = 0.01
 MARGIN = 0
-RANGE = 30
-MAX_VELOCITY = .9
+RANGE = 20
+MAX_VELOCITY = .7
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
 SHIP_WIDTH = 5
@@ -18,10 +18,12 @@ SEPARATION_DISTANCE = 20
 ALIGNMENT_DISTANCE = 80
 COHESION_DISTANCE = 80
 
-SEPARATION_FACTOR = 0.05
-ALIGNMENT_FACTOR = 0.005
-COHESION_FACTOR = 0.002
-ROUTE_FACTOR = 0.001
+SEPARATION_FACTOR = 0.01
+ALIGNMENT_FACTOR = 0.0001
+COHESION_FACTOR = 0.001
+
+ROUTE_FACTOR = 0.0005
+ROUTE_WAYPOINT_DISTANCE = 40
 
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
@@ -125,18 +127,21 @@ class Ship:
         self.vx += separation_vector[0] * SEPARATION_FACTOR + (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR + (cohesion_vector[0] - self.x) * COHESION_FACTOR
         self.vy += separation_vector[1] * SEPARATION_FACTOR + (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR + (cohesion_vector[1] - self.y) * COHESION_FACTOR
 
-    def follow_route(self):
+    def follow_route(self, surface=None):
         if self.route is None:
             return
 
-        if len(self.route) >= 2:
-            p1 = self.route[-1]
-            p2 = self.route[-2]
-        
-            if is_point_inside_segment(p1, p2, (self.x, self.y)):
-                self.route.pop()
+        if distance((self.x, self.y), self.route[-1]) <= ROUTE_WAYPOINT_DISTANCE:
+            self.route.pop()
+
+        if len(self.route) == 0:
+            self.route = None
+            return
         
         dx, dy = route.find_velocity(self.route, (self.x, self.y))
+        
+        if surface is not None:
+            pygame.draw.line(surface, "black", (self.x, self.y), self.route[-1])
 
         self.vx += dx * ROUTE_FACTOR
         self.vy += dy * ROUTE_FACTOR
