@@ -23,6 +23,10 @@ def get_closest_coastpoint(coastlines):
                 closest_point = point
     return closest_point
 
+def generate_routes(ports, graph, weights):
+    pairs = [(ports[i], ports[j]) for i in range(len(ports)) for j in range(i+1, len(ports))]
+    return [get_port_route(a, b, graph, weights) for (a, b) in pairs]
+
 def main():
     pygame.init()
     pygame.font.init()
@@ -30,6 +34,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     show_ship_sensors = True
+    show_graph = True
     dt = 0
 
     port_mode = False
@@ -45,7 +50,8 @@ def main():
             ports.append(Port(x, y, 10))
 
     graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, 20)
-    route = get_port_route(ports[0], ports[2], graph, weights)
+    routes = generate_routes(ports, graph, weights)
+    route = routes[0]
 
     ships = []
     for _ in range(20):
@@ -64,6 +70,9 @@ def main():
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
                     show_ship_sensors = not show_ship_sensors
+                    show_graph = not show_graph
+                if event.key == pygame.K_g:
+                    routes = generate_routes(ports, graph, weights)
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -79,7 +88,8 @@ def main():
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
 
-        draw_route(screen, route)
+        for r in routes:
+            draw_route(screen, r)
 
         for ship in ships:
             ship.boundary_update(1280, 720)
@@ -101,7 +111,8 @@ def main():
             pygame.draw.line(screen, (255, 0, 0, 0.5), pygame.mouse.get_pos(), point)
             screen.blit(circle_surf, (point[0] - radius, point[1] - radius))
 
-        draw_graph(graph, screen)
+        if show_graph:
+            draw_graph(graph, screen)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000 # limits FPS, dt is time since last frame
