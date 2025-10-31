@@ -46,7 +46,7 @@ def main():
 
 
     ports = []
-    graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, 20, 20)
+    graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, grid_gap=20, min_dist=20)
     routes = generate_routes(ports, graph, weights)
     route = None
 
