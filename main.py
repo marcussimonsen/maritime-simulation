@@ -6,10 +6,11 @@ from coastlines.svg_parser import svg_to_points
 from port import Port
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
-from route import draw_route
+from route import draw_route, draw_graph, create_ocean_graph, get_port_route
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 route = [(100,350), (150,350), (350, 250), (450, 500), (650, 500), (700, 300), (800, 300), (1000, 300), (1200, 300)]
+
 
 def get_closest_coastpoint(coastlines):
     x, y = pygame.mouse.get_pos()
@@ -23,6 +24,10 @@ def get_closest_coastpoint(coastlines):
                 closest_point = point
     return closest_point
 
+def generate_routes(ports, graph, weights):
+    pairs = [(ports[i], ports[j]) for i in range(len(ports)) for j in range(i+1, len(ports))]
+    return [[(a.x, a.y)] + get_port_route(a, b, graph, weights) + [(b.x, b.y)] for (a, b) in pairs]
+
 def main():
     pygame.init()
     pygame.font.init()
@@ -30,6 +35,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     show_ship_sensors = True
+    show_graph = True
     dt = 0
 
     port_mode = False
@@ -38,16 +44,16 @@ def main():
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
+
+    ports = []
+    graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, 20, 20)
+    routes = generate_routes(ports, graph, weights)
+    route = None
+
     ships = []
     for _ in range(20):
         x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
-        ships.append(Ship(x, y, route.copy()))
-
-    ports = []
-    for polygon in coastlines:
-        for _ in range(2):
-            x, y = random.choice(polygon)
-            ports.append(Port(x, y, 10))
+        ships.append(Ship(x, y, route[1:-1].copy() if route else None))
 
     while running:
         for event in pygame.event.get():
@@ -61,6 +67,9 @@ def main():
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
                     show_ship_sensors = not show_ship_sensors
+                    show_graph = not show_graph
+                if event.key == pygame.K_g:
+                    routes = generate_routes(ports, graph, weights)
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -76,7 +85,8 @@ def main():
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
 
-        draw_route(screen, route)
+        for r in routes:
+            draw_route(screen, r)
 
         for ship in ships:
             ship.boundary_update(1280, 720)
@@ -97,6 +107,9 @@ def main():
             pygame.draw.circle(circle_surf, (255, 0, 0, 128), (radius, radius), radius)
             pygame.draw.line(screen, (255, 0, 0, 0.5), pygame.mouse.get_pos(), point)
             screen.blit(circle_surf, (point[0] - radius, point[1] - radius))
+
+        if show_graph:
+            draw_graph(graph, screen)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000 # limits FPS, dt is time since last frame
