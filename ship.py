@@ -1,15 +1,29 @@
 import pygame
 import math
 
+from reynold import separation, cohesion, alignment
+import route
+
 TURN_FACTOR = .1
-COASTLINE_TURN_FACTOR = 0.0005
-MARGIN = 20
+COASTLINE_TURN_FACTOR = 0.01
+MARGIN = 0
 RANGE = 20
-MAX_VELOCITY = .9
+MAX_VELOCITY = .7
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
 SHIP_WIDTH = 5
 SHIP_LENGTH = 10
+
+SEPARATION_DISTANCE = 20
+ALIGNMENT_DISTANCE = 80
+COHESION_DISTANCE = 80
+
+SEPARATION_FACTOR = 0.01
+ALIGNMENT_FACTOR = 0.0001
+COHESION_FACTOR = 0.001
+
+ROUTE_FACTOR = 0.0005
+ROUTE_WAYPOINT_DISTANCE = 40
 
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
@@ -25,6 +39,15 @@ def closest_point(line, point):
 
     return x, y
 
+def is_point_inside_segment(line_p1, line_p2, p3):
+    # NOTE: maybe we should check distance by radius from point
+
+    is_x_inside = p3[0] > min(line_p1[0], line_p2[0]) and p3[0] < max(line_p1[0], line_p2[0]) 
+    is_y_inside = p3[1] > min(line_p1[1], line_p2[1]) and p3[1] < max(line_p1[1], line_p2[1])
+
+    return is_x_inside or is_y_inside # technically should be 'and', but shouldn't be a problem
+
+
 def distance(point_a, point_b):
     ax, ay = point_a
     bx, by = point_b
@@ -32,13 +55,16 @@ def distance(point_a, point_b):
 
 
 class Ship:
-    def __init__(self, x, y):
+    def __init__(self, x, y, route=None):
         self.x = x
         self.y = y
         self.vx = -1
         self.vy = -1
         self.docked = False
+        self.route = route
 
+    def set_route(self, route):
+        self.route = route
 
     # Draw the ship at its current position and orientation
     def draw(self, surface, debug_draw=False):
@@ -76,6 +102,50 @@ class Ship:
             self.vx += TURN_FACTOR
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
+
+    def flocking(self, ships):
+        separation_neighbors = []
+        alignment_neighbors = []
+        cohesion_neighbors = []
+
+        for other in ships:
+            if other is self:
+                continue
+
+            d = distance((self.x, self.y), (other.x, other.y))
+            if d < SEPARATION_DISTANCE:
+                separation_neighbors.append(other)
+            if d < ALIGNMENT_DISTANCE:
+                alignment_neighbors.append(other)
+            if d < COHESION_DISTANCE:
+                cohesion_neighbors.append(other)
+
+        separation_vector = separation(self, separation_neighbors)
+        alignment_vector = alignment(self, alignment_neighbors)
+        cohesion_vector = cohesion(self, cohesion_neighbors)
+
+        self.vx += separation_vector[0] * SEPARATION_FACTOR + (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR + (cohesion_vector[0] - self.x) * COHESION_FACTOR
+        self.vy += separation_vector[1] * SEPARATION_FACTOR + (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR + (cohesion_vector[1] - self.y) * COHESION_FACTOR
+
+    def follow_route(self, surface=None):
+        if self.route is None:
+            return
+
+        if distance((self.x, self.y), self.route[-1]) <= ROUTE_WAYPOINT_DISTANCE:
+            self.route.pop()
+
+        if len(self.route) == 0:
+            self.route = None
+            return
+        
+        dx, dy = route.find_velocity(self.route, (self.x, self.y))
+        
+        if surface is not None:
+            pygame.draw.line(surface, "black", (self.x, self.y), self.route[-1])
+
+        self.vx += dx * ROUTE_FACTOR
+        self.vy += dy * ROUTE_FACTOR
+
 
     # Move ship, avoiding coastlines
     def move(self, ships, coastlines, surface=None):

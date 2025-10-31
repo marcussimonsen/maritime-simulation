@@ -6,8 +6,10 @@ from coastlines.svg_parser import svg_to_points
 from port import Port
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
+from route import draw_route
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
+route = [(100,350), (150,350), (350, 250), (450, 500), (650, 500), (700, 300), (800, 300), (1000, 300), (1200, 300)]
 
 def get_closest_coastpoint(coastlines):
     x, y = pygame.mouse.get_pos()
@@ -37,9 +39,9 @@ def main():
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
     ships = []
-    for _ in range(200):
+    for _ in range(20):
         x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
-        ships.append(Ship(x, y))
+        ships.append(Ship(x, y, route.copy()))
 
     ports = []
     for polygon in coastlines:
@@ -74,8 +76,12 @@ def main():
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
 
+        draw_route(screen, route)
+
         for ship in ships:
             ship.boundary_update(1280, 720)
+            ship.flocking(ships)
+            ship.follow_route(surface=screen if show_ship_sensors else None)
             ship.move(ships, coastlines, surface=screen if show_ship_sensors else None)
             ship.draw(screen)
 
