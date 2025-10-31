@@ -6,7 +6,7 @@ from coastlines.svg_parser import svg_to_points
 from port import Port
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
-from route import draw_route
+from route import draw_route, draw_graph, create_ocean_graph, get_port_route
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 route = [(100,350), (150,350), (350, 250), (450, 500), (650, 500), (700, 300), (800, 300), (1000, 300), (1200, 300)]
@@ -38,16 +38,19 @@ def main():
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
-    ships = []
-    for _ in range(20):
-        x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
-        ships.append(Ship(x, y, route.copy()))
-
     ports = []
     for polygon in coastlines:
         for _ in range(2):
             x, y = random.choice(polygon)
             ports.append(Port(x, y, 10))
+
+    graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, 20)
+    route = get_port_route(ports[0], ports[2], graph, weights)
+
+    ships = []
+    for _ in range(20):
+        x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
+        ships.append(Ship(x, y, route.copy()))
 
     while running:
         for event in pygame.event.get():
@@ -97,6 +100,8 @@ def main():
             pygame.draw.circle(circle_surf, (255, 0, 0, 128), (radius, radius), radius)
             pygame.draw.line(screen, (255, 0, 0, 0.5), pygame.mouse.get_pos(), point)
             screen.blit(circle_surf, (point[0] - radius, point[1] - radius))
+
+        draw_graph(graph, screen)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000 # limits FPS, dt is time since last frame
