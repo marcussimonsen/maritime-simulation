@@ -1,12 +1,13 @@
 import heapq
 from collections import defaultdict
-from math import inf, dist
+from math import dist, inf
 
 import numpy as np
 import pygame
-from port import Port
 
+from port import Port
 from spawn_utils import point_in_polygon
+
 
 def close_to_coastline(point, coastlines, min_dist):
     for poly in coastlines:
@@ -40,13 +41,32 @@ def create_ocean_graph(coastlines, screen_width, screen_height, screen, grid_gap
                 graph[(x, y)] = []
 
     for x, y in graph.keys():
-        for x2, y2 in [(x - grid_gap, y), (x + grid_gap, y), (x, y - grid_gap), (x, y + grid_gap), (x - grid_gap, y - grid_gap), (x - grid_gap, y + grid_gap), (x + grid_gap, y + grid_gap), (x + grid_gap, y - grid_gap)]:
+        for x2, y2 in [(x - grid_gap, y),
+                       (x + grid_gap, y),
+                       (x, y - grid_gap),
+                       (x, y + grid_gap),
+                       (x - grid_gap, y - grid_gap),
+                       (x - grid_gap, y + grid_gap),
+                       (x + grid_gap, y + grid_gap),
+                       (x + grid_gap, y - grid_gap)]:
             if (x2, y2) in graph.keys():
                 graph[(x, y)].append((x2, y2))
                 if x == x2 or y == y2:
                     weight[(x, y), (x2, y2)] = grid_gap
                 else:
                     weight[(x, y), (x2, y2)] = np.sqrt(grid_gap ** 2 + grid_gap ** 2)
+        for x2, y2 in [(x - 2*grid_gap, y - grid_gap),
+                       (x - 2*grid_gap, y + grid_gap),
+                       (x + 2*grid_gap, y - grid_gap),
+                       (x + 2*grid_gap, y + grid_gap),
+                       (x - grid_gap, y - 2*grid_gap),
+                       (x + grid_gap, y - 2*grid_gap),
+                       (x - grid_gap, y + 2*grid_gap),
+                       (x + grid_gap, y + 2*grid_gap)]:
+            if (x2, y2) in graph.keys():
+                graph[(x, y)].append((x2, y2))
+                weight[(x, y), (x2, y2)] = np.sqrt((grid_gap*2) **2 + grid_gap ** 2)
+
 
     return graph, weight
 
