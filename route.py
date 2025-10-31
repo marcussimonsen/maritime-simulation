@@ -8,6 +8,13 @@ from port import Port
 
 from spawn_utils import point_in_polygon
 
+def close_to_coastline(point, coastlines, min_dist):
+    for poly in coastlines:
+        for p in poly:
+            if dist(point, p) < min_dist:
+                return True
+    return False
+
 def get_closest_point(p, lst):
     min_dist = None
     closest_point = None
@@ -24,12 +31,12 @@ def get_port_route(port_a: Port, port_b: Port, graph, weight):
     return dijkstra(graph, weight, a, b)[-1]
 
 
-def create_ocean_graph(coastlines, screen_width, screen_height, screen, grid_gap):
+def create_ocean_graph(coastlines, screen_width, screen_height, screen, grid_gap, min_dist):
     graph = defaultdict(list)
     weight = {}
     for x in range(0 + grid_gap, screen_width, grid_gap):
         for y in range(0 + grid_gap, screen_height, grid_gap):
-            if not any([point_in_polygon((x, y), poly) for poly in coastlines]):
+            if not any([point_in_polygon((x, y), poly) or close_to_coastline((x, y), coastlines, min_dist) for poly in coastlines]):
                 graph[(x, y)] = []
 
     for x, y in graph.keys():
