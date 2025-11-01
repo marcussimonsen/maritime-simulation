@@ -1,15 +1,19 @@
 import random
 
 import pygame
-
 from coastlines.svg_parser import svg_to_points
+from orders.order_dispatcher import add_random_orders
 from port import Port
 from ship import Ship
+from order import Order
 from spawn_utils import spawn_not_in_coastlines
 from route import draw_route
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 route = [(100,350), (150,350), (350, 250), (450, 500), (650, 500), (700, 300), (800, 300), (1000, 300), (1200, 300)]
+
+def get_distance(p1, p2):
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
 def get_closest_coastpoint(coastlines):
     x, y = pygame.mouse.get_pos()
@@ -30,6 +34,14 @@ def main():
     clock = pygame.time.Clock()
     running = True
     show_ship_sensors = True
+    should_add_random_orders = True
+    creating_order = False
+    departure_port = None
+    destination_port = None
+    has_order_color = "green"
+    no_order_color = "red"
+    container_amount = 0
+
     dt = 0
 
     port_mode = False
@@ -54,6 +66,30 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            if creating_order:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        creating_order = False
+                        departure_port.color = no_order_color
+                        departure_port = None
+                    elif event.key == pygame.K_UP:
+                        container_amount += 1
+                    elif event.key == pygame.K_DOWN:
+                        container_amount = max(0, container_amount - 1)
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    for port in ports:
+                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        if dist <= port.radius and port != departure_port:
+                            destination_port = port
+                            num_containers = container_amount
+                            departure_port.add_order(Order(destination_port, num_containers))
+                            creating_order = False
+                            destination_port.color = has_order_color
+                            break
+                    continue
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
@@ -70,6 +106,18 @@ def main():
                 if port_mode:
                     closest_coastpoint = get_closest_coastpoint(coastlines)
                     ports.append(Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=capacities[capacity_index]))
+                else:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    for port in ports:
+                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        if dist <= port.radius:
+                            creating_order = True
+                            departure_port = port
+                            departure_port.color = "green"
+                            break
+
+                
+
 
         screen.fill((0, 105, 148))
 
@@ -97,6 +145,11 @@ def main():
             pygame.draw.circle(circle_surf, (255, 0, 0, 128), (radius, radius), radius)
             pygame.draw.line(screen, (255, 0, 0, 0.5), pygame.mouse.get_pos(), point)
             screen.blit(circle_surf, (point[0] - radius, point[1] - radius))
+
+        if creating_order:
+            font = pygame.font.SysFont(None, 36)
+            text = font.render(f"{container_amount} container(s)", True, (255, 255, 255))
+            screen.blit(text, ((SCREEN_WIDTH // 2) - text.get_width(), (SCREEN_HEIGHT // 2) - text.get_height()))
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000 # limits FPS, dt is time since last frame
