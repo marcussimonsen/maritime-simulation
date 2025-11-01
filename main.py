@@ -21,15 +21,24 @@ def get_closest_coastpoint(coastlines):
     min_dist = float('inf')
     for coastline in coastlines:
         for point in coastline:
-            dist = ((point[0] - x) ** 2 + (point[1] - y) ** 2) ** 0.5
+            dist = get_distance((x, y), point)
             if dist < min_dist:
                 min_dist = dist
                 closest_point = point
     return closest_point
 
 def generate_routes(ports, graph, weights):
-    pairs = [(ports[i], ports[j]) for i in range(len(ports)) for j in range(i+1, len(ports))]
-    return [[(a.x, a.y)] + get_port_route(a, b, graph, weights) + [(b.x, b.y)] for (a, b) in pairs]
+    routes = {}
+    for i in range(len(ports)):
+        for j in range(i + 1, len(ports)):
+            a, b = ports[i], ports[j]
+            route = [(a.x, a.y)] + get_port_route(a, b, graph, weights) + [(b.x, b.y)]
+            routes[(a, b)] = route
+            routes[(b, a)] = route[::-1]
+    return routes
+
+def get_route_between(routes, departure_port, destination_port):
+    return routes.get((departure_port, destination_port))
 
 def main():
     pygame.init()
@@ -39,7 +48,6 @@ def main():
     running = True
     show_ship_sensors = True
     should_add_random_orders = True
-    creating_order = False
     departure_port = None
     destination_port = None
     has_order_color = "green"
@@ -47,6 +55,7 @@ def main():
     container_amount = 0
     show_graph = True
     dt = 0
+    creating_order = False
 
     port_mode = False
     capacities = [10, 20, 30]
@@ -65,6 +74,27 @@ def main():
         x, y = spawn_not_in_coastlines(coastlines, 1280, 720, margin=50, max_attempts=2000)
         ships.append(Ship(x, y, route[1:-1].copy() if route else None))
 
+    def undock_ship(ship, route, destination, departure):
+        ship.set_route(route)
+        ship.departure = departure
+        ship.destination = destination
+        ship.docked = False
+        ship.vx = -1
+        ship.vy = -1
+        ship.x = route[1][0]
+        ship.y = route[1][1]
+        ships.append(ship)
+
+    def send_off_ships(port, routes):
+        for order in list(port.orders):
+            route = get_route_between(routes, port, order.destination)
+            if len(port.docked_ships) < order.containers:
+                continue
+            for _ in range(order.containers):
+                ship = port.docked_ships.pop(0)
+                undock_ship(ship, route, order.destination, port)
+            port.orders.remove(order)
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -80,8 +110,7 @@ def main():
                         container_amount += 1
                     elif event.key == pygame.K_DOWN:
                         container_amount = max(0, container_amount - 1)
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
                         dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
@@ -89,8 +118,8 @@ def main():
                             destination_port = port
                             num_containers = container_amount
                             departure_port.add_order(Order(destination_port, num_containers))
-                            creating_order = False
                             destination_port.color = has_order_color
+                            creating_order = False
                             break
                     continue
 
@@ -112,7 +141,11 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if port_mode:
                     closest_coastpoint = get_closest_coastpoint(coastlines)
-                    ports.append(Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=capacities[capacity_index]))
+                    port = Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=capacities[capacity_index])
+                    for _ in range(5):
+                        ship = Ship(port.x, port.y)
+                        ship.dock_at_port(port)
+                    ports.append(port)
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
@@ -131,7 +164,7 @@ def main():
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
 
-        for r in routes:
+        for r in routes.values():
             draw_route(screen, r)
 
         for ship in ships:
@@ -143,6 +176,7 @@ def main():
 
         for port in ports:
             port.dock_nearby_ships(ships)
+            send_off_ships(port, routes)
             port.draw(screen)
 
         if port_mode:

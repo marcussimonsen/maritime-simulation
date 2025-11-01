@@ -20,20 +20,13 @@ class Port:
         for ship in ships:
             if ship.docked:
                 continue
-            if ship.destination != None and ship.destination != self:
+            if ship.departure != None and ship.departure == self:
                 continue
             dist = ((ship.x - self.x) ** 2 + (ship.y - self.y) ** 2) ** 0.5
             if dist <= self.radius and len(self.docked_ships) < self.capacity:
+                print("docking!")
                 ship.dock_at_port(self)
 
-    def send_off_ships(self):
-        for order in list(self.orders):
-            if len(self.docked_ships) < order.containers:
-                continue
-            for _ in range(order.containers):
-                ship = self.docked_ships.pop(0)
-                ship.undock(order.destination)
-            self.orders.remove(order)
 
     def add_order(self, order):
         self.orders.append(order)
