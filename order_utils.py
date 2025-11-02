@@ -1,11 +1,12 @@
 import random
+from order import Order
+from ship import Ship
+
 
 def add_random_orders(ports):
     max_containers_per_order = 4
 
     for port in ports:
-        if add_ports_randomly is False:
-            break
         dest_port = random.choice(ports)
         while dest_port == port:
             dest_port = random.choice(ports)
@@ -14,3 +15,4 @@ def add_random_orders(ports):
         port.add_order(Order(dest_port, number_of_containers))
         for _ in range(number_of_containers):
             ship = Ship(port.x, port.y)
+            ship.dock_at_port(port)
