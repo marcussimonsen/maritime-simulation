@@ -62,6 +62,8 @@ class Ship:
         self.vy = -1
         self.docked = False
         self.route = route
+        self.destination = None
+        self.departure = None
 
     def set_route(self, route):
         self.route = route.copy()
@@ -232,4 +234,4 @@ class Ship:
         self.vy = 0
         self.x = port.x
         self.y = port.y
-
+        port.docked_ships.append(self)

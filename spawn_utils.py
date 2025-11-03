@@ -1,9 +1,9 @@
-import pygame
 import random
 from typing import List, Tuple
 
 Point = Tuple[int, int]
 Polygon = List[Point]
+
 
 def point_in_polygon(point, poly):
     x, y = point
@@ -19,10 +19,11 @@ def point_in_polygon(point, poly):
         j = i
     return inside
 
+
 def spawn_not_in_coastlines(coastlines, w, h, margin=0, max_attempts=1000):
     """Return a random (x,y) not inside any coastline. Falls back to center if none found."""
     for _ in range(max_attempts):
-        x = random.randint(margin+1000, w - margin) # TODO: function take minimum x and y as well
+        x = random.randint(margin+1000, w - margin)  # TODO: function take minimum x and y as well
         y = random.randint(margin, h - margin)
         if not any(point_in_polygon((x, y), poly) for poly in coastlines):
             return x, y
