@@ -5,9 +5,9 @@ from reynold import separation, cohesion, alignment
 import route
 
 TURN_FACTOR = .1
-COASTLINE_TURN_FACTOR = 0.01
+COASTLINE_TURN_FACTOR = 0.1
 MARGIN = 0
-RANGE = 20
+RANGE = 5
 MAX_VELOCITY = .7
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
