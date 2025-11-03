@@ -28,8 +28,8 @@ class ShipManager:
         ship.docked = False
         ship.vx = -1
         ship.vy = -1
-        ship.x = route[1][0]
-        ship.y = route[1][1]
+        ship.x = route[-2][0]
+        ship.y = route[-2][1]
         self.ships.append(ship)
 
     def send_off_ships(self, port, routes):
