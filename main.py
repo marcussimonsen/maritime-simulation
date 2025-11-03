@@ -38,8 +38,8 @@ def generate_routes(ports, graph, weights):
         for j in range(i + 1, len(ports)):
             a, b = ports[i], ports[j]
             route = [(a.x, a.y)] + get_port_route(a, b, graph, weights) + [(b.x, b.y)]
-            routes[(a, b)] = route
-            routes[(b, a)] = route[::-1]
+            routes[(b, a)] = route  # Store as reversed routes because of ship logic
+            routes[(a, b)] = route[::-1]
     return routes
 
 
