@@ -1,4 +1,4 @@
-def alignment(ship, neighbors) -> (float, float):
+def alignment(ship, neighbors) -> tuple[float, float]|None:
     avg_velx = 0
     avg_vely = 0
 
@@ -15,7 +15,7 @@ def alignment(ship, neighbors) -> (float, float):
         return None
 
 
-def separation(ship, neighbors) -> (float, float):
+def separation(ship, neighbors) -> tuple[float, float]:
     x = 0
     y = 0
 
@@ -25,7 +25,7 @@ def separation(ship, neighbors) -> (float, float):
 
     return x, y
 
-def cohesion(ship, neighbors) -> (float, float):
+def cohesion(ship, neighbors) -> tuple[float, float]|None:
     avg_posx = 0
     avg_posy = 0
 
