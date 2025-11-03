@@ -10,7 +10,9 @@ def alignment(ship, neighbors) -> (float, float):
         avg_velx /= len(neighbors)
         avg_vely /= len(neighbors)
 
-    return avg_velx, avg_vely
+        return avg_velx, avg_vely
+    else:
+        return None
 
 
 def separation(ship, neighbors) -> (float, float):
@@ -35,4 +37,6 @@ def cohesion(ship, neighbors) -> (float, float):
         avg_posx /= len(neighbors)
         avg_posy /= len(neighbors)
 
-    return avg_posx, avg_posy
+        return avg_posx, avg_posy
+    else:
+        return None

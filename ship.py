@@ -124,8 +124,16 @@ class Ship:
         alignment_vector = alignment(self, alignment_neighbors)
         cohesion_vector = cohesion(self, cohesion_neighbors)
 
-        self.vx += separation_vector[0] * SEPARATION_FACTOR + (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR + (cohesion_vector[0] - self.x) * COHESION_FACTOR
-        self.vy += separation_vector[1] * SEPARATION_FACTOR + (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR + (cohesion_vector[1] - self.y) * COHESION_FACTOR
+        self.vx += separation_vector[0] * SEPARATION_FACTOR
+        self.vy += separation_vector[1] * SEPARATION_FACTOR
+
+        if alignment_vector is not None:
+            self.vx += (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR
+            self.vy += (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR
+
+        if cohesion_vector is not None:
+            self.vx += (cohesion_vector[0] - self.x) * COHESION_FACTOR
+            self.vy += (cohesion_vector[1] - self.y) * COHESION_FACTOR
 
     def follow_route(self, surface=None):
         if self.route is None:
