@@ -14,16 +14,17 @@ class Port:
     def draw(self, surface):
         pygame.draw.circle(surface, self.color, (self.x, self.y), self.radius)
         text = pygame.font.SysFont(None, 24).render(f'{len(self.docked_ships)}/{self.capacity}', False, (0, 0, 0))
-        surface.blit(text, (self.x + self.radius + 5, self.y - self.radius))
+        surface.blit(text, (self.x + 15, self.y - self.radius))
 
     def dock_nearby_ships(self, ships):
+        padding = 15
         for ship in ships:
             if ship.docked:
                 continue
-            if ship.departure != None and ship.departure == self:
+            if ship.departure is not None and ship.departure == self:
                 continue
             dist = ((ship.x - self.x) ** 2 + (ship.y - self.y) ** 2) ** 0.5
-            if dist <= self.radius and len(self.docked_ships) < self.capacity:
+            if dist <= self.radius + padding and len(self.docked_ships) < self.capacity:
                 ship.dock_at_port(self)
 
     def add_order(self, order):

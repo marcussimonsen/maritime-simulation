@@ -80,7 +80,7 @@ def main():
 
             if creating_order:
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_c:
                         creating_order = False
                         departure_port.color = no_order_color
                         departure_port = None
@@ -119,7 +119,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if port_mode:
                     closest_coastpoint = get_closest_coastpoint(coastlines)
-                    port = Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=capacities[capacity_index])
+                    port = Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=10)
                     for _ in range(5):
                         ship = Ship(port.x, port.y)
                         ship.dock_at_port(port)

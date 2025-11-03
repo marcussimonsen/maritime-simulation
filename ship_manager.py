@@ -10,7 +10,7 @@ class ShipManager:
         self.screen = screen
 
     def get_route_between(self, routes, departure_port, destination_port):
-        return routes.get((departure_port, destination_port))
+        return routes.get((departure_port, destination_port), None)
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)
