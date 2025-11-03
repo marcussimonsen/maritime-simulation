@@ -64,7 +64,7 @@ class Ship:
         self.route = route
 
     def set_route(self, route):
-        self.route = route
+        self.route = route.copy()
 
     # Draw the ship at its current position and orientation
     def draw(self, surface, debug_draw=False):
