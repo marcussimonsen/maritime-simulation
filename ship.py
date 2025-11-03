@@ -115,11 +115,14 @@ class Ship:
                 continue
 
             d = distance((self.x, self.y), (other.x, other.y))
+            sx, sy = route.find_velocity(self.route, (self.x, self.y))
+            ox, oy = route.find_velocity(other.route, (other.x, other.y))
+            theta = sx * ox + sy * oy
             if d < SEPARATION_DISTANCE:
                 separation_neighbors.append(other)
-            if d < ALIGNMENT_DISTANCE:
+            if d < ALIGNMENT_DISTANCE and theta > 0:
                 alignment_neighbors.append(other)
-            if d < COHESION_DISTANCE:
+            if d < COHESION_DISTANCE and theta > 0:
                 cohesion_neighbors.append(other)
 
         separation_vector = separation(self, separation_neighbors)
