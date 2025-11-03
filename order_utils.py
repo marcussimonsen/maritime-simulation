@@ -3,9 +3,7 @@ from order import Order
 from ship import Ship
 
 
-def add_random_orders(ports):
-    max_containers_per_order = 4
-
+def add_random_orders(ports, max_containers_per_order=4):
     for port in ports:
         dest_port = random.choice(ports)
         while dest_port == port:
