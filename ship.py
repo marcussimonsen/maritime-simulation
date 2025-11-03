@@ -141,7 +141,8 @@ class Ship:
         if self.route is None:
             return
 
-        if distance((self.x, self.y), self.route[-1]) <= ROUTE_WAYPOINT_DISTANCE:
+        # If route length is 1, we want to dock and therefore move as close to the point as possible
+        if len(self.route) > 1 and distance((self.x, self.y), self.route[-1]) <= ROUTE_WAYPOINT_DISTANCE:
             self.route.pop()
 
         if len(self.route) == 0:
