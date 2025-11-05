@@ -34,7 +34,7 @@ class ShipManager:
     def dock_ship(self, port, ship):
         ship.dock(port)
         self.remove_ship(ship)
-        port.docked_ships.append(ship)
+        port.add_docked_ship(ship)
 
     def send_off_ships(self, port, routes):
         for order in list(port.orders):
@@ -44,7 +44,7 @@ class ShipManager:
             for _ in range(order.containers):
                 ship = port.docked_ships.pop(0)
                 self.undock_ship(ship, route, order.destination, port)
-            port.orders.remove(order)
+            port.remove_order(order)
 
     def update_ships(self, coastlines):
         for ship in self.ships:
@@ -53,6 +53,21 @@ class ShipManager:
             ship.follow_route(surface=self.screen if self.show_ship_sensors else None)
             ship.move(self.ships, coastlines, surface=self.screen if self.show_ship_sensors else None)
             ship.draw(self.screen)
+
+    def update_ports(self, ports, routes):
+        for port in ports:
+            self.dock_nearby_ships_to_destination_dock(port)
+            self.send_off_ships(port, routes)
+            port.draw(self.screen)
+
+    def dock_nearby_ships_to_destination_dock(self, port):
+        padding = 15
+        for ship in self.ships:
+            if ship.destination is None: # Ignore ships that do not have a route - this is irrelevant for us, we don't want this
+                continue
+            dist = ((ship.x - port.x) ** 2 + (ship.y - port.y) ** 2) ** 0.5
+            if dist <= port.radius + padding and len(port.docked_ships) < port.capacity and ship.destination is port:
+                self.dock_ship(port, ship)
 
     def toggle_ship_sensors(self):
         self.show_ship_sensors = not self.show_ship_sensors
