@@ -12,3 +12,6 @@ def distance(point_a, point_b):
     ax, ay = point_a
     bx, by = point_b
     return math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
+
+def magnitude(v):
+    return math.sqrt(v[0] * v[0] + v[1] * v[1])

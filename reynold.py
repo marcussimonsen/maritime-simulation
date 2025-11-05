@@ -3,7 +3,7 @@ import time
 
 import pygame
 
-from utils import vector_dot_product, distance
+from utils import vector_dot_product, distance, magnitude
 
 def alignment(ship, neighbors) -> tuple[float, float]|None:
     avg_velx = 0
@@ -50,6 +50,7 @@ def cohesion(ship, neighbors) -> tuple[float, float]|None:
 
 
 def kelvin_cohesion(ship, neighbors, surface=None):
+    angle_offset = 0.7
     # Find closest neighbor that is in front
     # Place current ship 35 degrees to the left or right behind the front ship and XX behind
     closest_neighbor = None
@@ -57,7 +58,9 @@ def kelvin_cohesion(ship, neighbors, surface=None):
 
     for other in neighbors:
         # Check if ship is in front
-        if vector_dot_product((ship.vx, ship.vy), (other.x - ship.x, other.y - ship.y)) <= 0:
+        sm = magnitude((ship.vx, ship.vy)) + 1e-10
+        om = magnitude((other.x - ship.x, other.y - ship.y)) + 1e-10
+        if vector_dot_product((ship.vx / sm, ship.vy / sm), ((other.x - ship.x) / om, (other.y - ship.y) / om)) - angle_offset <= 0:
             continue
 
         # Check if ships are heading in same direction (less than 90 degrees difference)
@@ -79,7 +82,7 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         theta_v = theta_v + math.pi
 
     # Hyperparameters for tuning Kelvin angle
-    kelvin_distance = 25.
+    kelvin_distance = 20.
     kelvin_angle = 35
 
     # Angle of follow points

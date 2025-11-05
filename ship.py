@@ -14,13 +14,13 @@ MAX_VELOCITY = .7
 SHIP_WIDTH = 5
 SHIP_LENGTH = 10
 
-SEPARATION_DISTANCE = 20
+SEPARATION_DISTANCE = 15
 ALIGNMENT_DISTANCE = 80
 COHESION_DISTANCE = 80
 
 SEPARATION_FACTOR = 0.01
 ALIGNMENT_FACTOR = 0.0001
-COHESION_FACTOR = 0.01
+COHESION_FACTOR = 0.05
 
 ROUTE_FACTOR = 0.0005
 ROUTE_WAYPOINT_DISTANCE = 40
@@ -78,7 +78,6 @@ class Ship:
         if self.vx == 0 and self.vy == 0:
             angle_deg = 0.0
         else:
-            # BUG: atan2 is always between -pi and pi, which i don't believe is what we want
             angle_deg = math.degrees(math.atan2(-self.vy, self.vx))
 
         # Rotate and blit centered at (self.x, self.y)
