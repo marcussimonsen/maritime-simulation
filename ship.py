@@ -115,14 +115,20 @@ class Ship:
                 continue
 
             d = distance((self.x, self.y), (other.x, other.y))
-            sx, sy = route.find_velocity(self.route, (self.x, self.y))
-            ox, oy = route.find_velocity(other.route, (other.x, other.y))
-            theta = sx * ox + sy * oy
+
+            # theta is the angle between two ships' route vectors
+            theta = None # Ships might not have a route
+            # If both ships have routes, don't flock if route vectors differ by more than 90 degrees
+            # NOTE: Maybe 90 degrees is not the optimal angle?
+            if self.route is not None and other.route is not None:
+                sx, sy = route.find_velocity(self.route, (self.x, self.y))
+                ox, oy = route.find_velocity(other.route, (other.x, other.y))
+                theta = sx * ox + sy * oy
             if d < SEPARATION_DISTANCE:
                 separation_neighbors.append(other)
-            if d < ALIGNMENT_DISTANCE and theta > 0:
+            if d < ALIGNMENT_DISTANCE and (theta is None or theta > 0):
                 alignment_neighbors.append(other)
-            if d < COHESION_DISTANCE and theta > 0:
+            if d < COHESION_DISTANCE and (theta is None or theta > 0):
                 cohesion_neighbors.append(other)
 
         separation_vector = separation(self, separation_neighbors)
