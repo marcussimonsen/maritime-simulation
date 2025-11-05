@@ -122,7 +122,7 @@ def main():
                     port = Port(closest_coastpoint[0], closest_coastpoint[1], capacities[capacity_index], radius=10)
                     for _ in range(5):
                         ship = Ship(port.x, port.y)
-                        ship.dock_at_port(port)
+                        ship_manager.dock_ship(port, ship)
                     ports.append(port)
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -144,7 +144,7 @@ def main():
 
         ship_manager.update_ships(coastlines)
         for port in ports:
-            port.dock_nearby_ships(ship_manager.ships)
+            port.dock_nearby_ships(ship_manager)
             ship_manager.send_off_ships(port, routes)
             port.draw(screen)
 

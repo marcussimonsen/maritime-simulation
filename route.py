@@ -9,6 +9,13 @@ from port import Port
 from spawn_utils import point_in_polygon
 
 
+class Route:
+    def __init__(self, path, departure, destination):
+        self.path = path
+        self.departure = departure
+        self.destination = destination
+
+
 def close_to_coastline(point, coastlines, min_dist):
     for poly in coastlines:
         for p in poly:
