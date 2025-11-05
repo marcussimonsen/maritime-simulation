@@ -143,10 +143,7 @@ def main():
             draw_route(screen, r)
 
         ship_manager.update_ships(coastlines)
-        for port in ports:
-            port.dock_nearby_ships(ship_manager)
-            ship_manager.send_off_ships(port, routes)
-            port.draw(screen)
+        ship_manager.update_ports(ports, routes)
 
         if port_mode:
             point = get_closest_coastpoint(coastlines)
