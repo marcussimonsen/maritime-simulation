@@ -73,17 +73,24 @@ def kelvin_cohesion(ship, neighbors, surface=None):
     if closest_neighbor is None:
         return None
 
+    # Angle of neighbors heading
     theta_v = math.atan(closest_neighbor.vy / closest_neighbor.vx)
+    if closest_neighbor.vx > 0:
+        theta_v = theta_v + math.pi
 
-    kelvin_distance = 30.
-    kelvin_angle = 40
+    # Hyperparameters for tuning Kelvin angle
+    kelvin_distance = 25.
+    kelvin_angle = 35
 
+    # Angle of follow points
     theta_l = theta_v + math.radians(kelvin_angle)
     theta_r = theta_v - math.radians(kelvin_angle)
 
+    # x pos of follow point relative to neighbor ship
     dx_l = math.cos(theta_l) * kelvin_distance
     dx_r = math.cos(theta_r) * kelvin_distance
 
+    # y pos of follow point relative to neighbor ship
     dy_l = math.sin(theta_l) * kelvin_distance
     dy_r = math.sin(theta_r) * kelvin_distance
 
@@ -91,17 +98,20 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         pygame.draw.line(surface, "blue", (closest_neighbor.x, closest_neighbor.y), (closest_neighbor.x + dx_l, closest_neighbor.y + dy_l))
         pygame.draw.line(surface, "green", (closest_neighbor.x, closest_neighbor.y), (closest_neighbor.x + dx_r, closest_neighbor.y + dy_r))
 
+    # left follow point (relative to neighbor)
     x_l = closest_neighbor.x + dx_l
     y_l = closest_neighbor.y + dy_l
 
+    # right follow point (relative to neighbor)
     x_r = closest_neighbor.x + dx_r
     y_r = closest_neighbor.y + dy_r
 
+    # Distances to follow points
     dl = distance((ship.x, ship.y), (x_l, y_l))
     dr = distance((ship.x, ship.y), (x_r, y_r))
 
+    # Closest follow point
     x, y = 0,0
-
     if dl < dr:
         x, y =  x_l, y_l
     else:
