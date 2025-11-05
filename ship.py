@@ -1,7 +1,7 @@
 import pygame
 import math
 
-from reynold import separation, cohesion, alignment
+from reynold import separation, cohesion, alignment, kelvin_cohesion
 import route
 
 TURN_FACTOR = .1
@@ -78,6 +78,7 @@ class Ship:
         if self.vx == 0 and self.vy == 0:
             angle_deg = 0.0
         else:
+            # BUG: atan2 is always between -pi and pi, which i don't believe is what we want
             angle_deg = math.degrees(math.atan2(-self.vy, self.vx))
 
         # Rotate and blit centered at (self.x, self.y)
@@ -101,7 +102,7 @@ class Ship:
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
 
-    def flocking(self, ships):
+    def flocking(self, ships, surface=None):
         separation_neighbors = []
         alignment_neighbors = []
         cohesion_neighbors = []
@@ -130,6 +131,7 @@ class Ship:
         separation_vector = separation(self, separation_neighbors)
         alignment_vector = alignment(self, alignment_neighbors)
         cohesion_vector = cohesion(self, cohesion_neighbors)
+        kelvin_vector = kelvin_cohesion(self, cohesion_neighbors, surface=surface)
 
         self.vx += separation_vector[0] * SEPARATION_FACTOR
         self.vy += separation_vector[1] * SEPARATION_FACTOR
@@ -138,9 +140,13 @@ class Ship:
             self.vx += (alignment_vector[0] - self.vx) * ALIGNMENT_FACTOR
             self.vy += (alignment_vector[1] - self.vy) * ALIGNMENT_FACTOR
 
-        if cohesion_vector is not None:
-            self.vx += (cohesion_vector[0] - self.x) * COHESION_FACTOR
-            self.vy += (cohesion_vector[1] - self.y) * COHESION_FACTOR
+        # if cohesion_vector is not None:
+        #     self.vx += (cohesion_vector[0] - self.x) * COHESION_FACTOR
+        #     self.vy += (cohesion_vector[1] - self.y) * COHESION_FACTOR
+
+        if kelvin_vector is not None:
+            self.vx += (kelvin_vector[0] - self.x) * COHESION_FACTOR
+            self.vy += (kelvin_vector[1] - self.y) * COHESION_FACTOR
 
     def follow_route(self, surface=None):
         if self.route is None:
@@ -222,6 +228,7 @@ class Ship:
         self.vx += vx * COASTLINE_TURN_FACTOR
         self.vy += vy * COASTLINE_TURN_FACTOR
 
+        # Use target speed and go towards that instead
         velocity = math.sqrt(self.vx ** 2 + self.vy ** 2)
         if velocity > MAX_VELOCITY:
             factor = 1 / velocity * MAX_VELOCITY
