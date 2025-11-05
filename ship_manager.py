@@ -1,5 +1,6 @@
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
+from route import Route
 
 
 class ShipManager:
@@ -15,6 +16,11 @@ class ShipManager:
     def add_ship(self, ship: Ship):
         self.ships.append(ship)
 
+    def remove_ship(self, ship: Ship):
+        # WARN: Linear running time in the amount of ships
+        if ship in self.ships:
+            self.ships.remove(ship)
+
     def spawn_random_ships(self, coastlines):
         route = None
         for _ in range(20):
@@ -22,15 +28,13 @@ class ShipManager:
             self.ships.append(Ship(x, y, route[1:-1].copy() if route else None))
 
     def undock_ship(self, ship, route, destination, departure):
-        ship.set_route(route)
-        ship.departure = departure
-        ship.destination = destination
-        ship.docked = False
-        ship.vx = -1
-        ship.vy = -1
-        ship.x = route[-2][0]
-        ship.y = route[-2][1]
-        self.ships.append(ship)
+        ship.undock(Route(route, departure, destination))
+        self.add_ship(ship)
+
+    def dock_ship(self, port, ship):
+        ship.dock(port)
+        self.remove_ship(ship)
+        port.docked_ships.append(ship)
 
     def send_off_ships(self, port, routes):
         for order in list(port.orders):
