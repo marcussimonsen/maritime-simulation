@@ -1,3 +1,5 @@
+from utils import vector_dot_product, distance
+
 def alignment(ship, neighbors) -> tuple[float, float]|None:
     avg_velx = 0
     avg_vely = 0
@@ -40,3 +42,27 @@ def cohesion(ship, neighbors) -> tuple[float, float]|None:
         return avg_posx, avg_posy
     else:
         return None
+
+def kelvin_cohesion(ship, neighbors):
+    # Find closest neighbor that is in front
+    # Place current ship 35 degrees to the left or right behind the front ship and XX behind
+    closest_neighbor = None
+    closest_dist = float('inf')
+
+    for other in neighbors:
+        # Check if ship is in front
+        if vector_dot_product((ship.vx, ship.vy), (other.x - ship.x, other.y - ship.y)) <= 0:
+            continue
+
+        # Check if ships are heading in same direction (less than 90 degrees difference)
+        if vector_dot_product((ship.vx, ship.vy), (other.vx, other.vy)) <= 0:
+            continue
+
+        # Find closest neighbor
+        d = distance((ship.x, ship.y), (other.x, other.y))
+        if d < closest_dist:
+            closest_dist = d
+            closest_neighbor = other
+
+def find_optimal_sailing_points(ship, distance_to_boat_ahead):
+    pass
