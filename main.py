@@ -3,11 +3,17 @@ import pygame
 from coastlines.svg_parser import svg_to_points
 from order_utils import add_random_orders
 from spawn_utils import spawn_not_in_coastlines
+from PSO.highway_optimizer import optimize_highways
 from port import Port
 from ship import Ship
 from order import Order
 from route_manager import RouteManager
 from ship_manager import ShipManager
+import numpy as np
+from threading import Event
+from queue import Queue
+from PSO.optimizer_worker import run_optimizer_task
+from threading import Thread
 
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
@@ -30,6 +36,17 @@ def get_closest_coastpoint(coastlines):
     return closest_point
 
 
+def collect_ports_and_orders(ports):
+    ports_xy = [(port.x, port.y) for port in ports]
+    orders = []
+    for origin_index, port in enumerate(ports):
+        for order in port.orders:
+            dest_index = ports.index(order.destination)
+            orders.append((origin_index, dest_index, order.containers))
+
+    return ports_xy, orders
+
+
 def main():
     pygame.init()
     pygame.font.init()
@@ -48,6 +65,15 @@ def main():
     creating_order = False
     route_manager = RouteManager(SCREEN_WIDTH, SCREEN_HEIGHT, screen)
     ship_manager = ShipManager((SCREEN_WIDTH, SCREEN_HEIGHT), screen, route_manager.routes)
+
+    # TODO: Opmtimization state: move from main
+    highway_nodes = None
+    highway_edges = None
+    all_nodes_for_draw = None
+    optimizing = False
+    optimize_result_queue = Queue()
+    optimize_cancel_event = Event()
+    optimizer_thread = None
 
     port_mode = False
     capacities = [10, 20, 30]
@@ -98,6 +124,35 @@ def main():
                     show_graph = not show_graph
                 if event.key == pygame.K_g:
                     route_manager.generate_routes(ports, graph, weights)
+                if event.key == pygame.K_h:
+                    if not optimizing:
+                        ports_xy, orders = collect_ports_and_orders(ports)
+                        bbox_min = np.array([0.0, 0.0])
+                        bbox_max = np.array([SCREEN_WIDTH, SCREEN_HEIGHT])
+                        kwargs = dict(
+                            ports_xy=ports_xy,
+                            orders=orders,
+                            coastlines=coastlines,
+                            bbox_min=bbox_min,
+                            bbox_max=bbox_max,
+                            M=1,  # number of highway nodes
+                            R=800,  # Radius. TODO: use k-nearest (k = 6) instead
+                            iters=150,
+                            particles=60,
+                            big_penalty=1e7,  # Penalty for disconnected orders
+                            spread_lambda=0.0
+                        )
+                        optimize_cancel_event.clear()
+                        optimizing = True
+
+                        optimizer_thread = Thread(
+                            target=run_optimizer_task,
+                            args=(optimize_highways, kwargs, optimize_result_queue, optimize_cancel_event),
+                            daemon=True
+                        )
+                        optimizer_thread.start()
+                        print("[Highways] Optimization started...")
+
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -147,6 +202,34 @@ def main():
 
         if show_graph:
             route_manager.draw_graph(graph, screen)
+
+        if highway_nodes is not None and all_nodes_for_draw is not None and highway_edges is not None:
+            for edge in highway_edges:
+                u, v = edge
+                start_pos = all_nodes_for_draw[u]
+                end_pos = all_nodes_for_draw[v]
+                pygame.draw.line(screen, (255, 255, 255), start_pos, end_pos, 3)
+
+            for node in highway_nodes:
+                pygame.draw.circle(screen, (255, 255, 255), (int(node[0]), int(node[1])), 5)
+
+        if optimizing:
+            font = pygame.font.SysFont(None, 24)
+            txt = font.render("Optimizing highways…", True, (255, 255, 255))
+            screen.blit(txt, (10, 10))
+
+        # Poll results
+        if optimizing:
+            try:
+                ok, payload = optimize_result_queue.get_nowait()
+                optimizing = False
+                if ok:
+                    highway_nodes, highway_edges, best_cost, all_nodes_for_draw = payload
+                    print(f"[Highways] Optimization finished: cost={best_cost:.2f}, nodes={len(highway_nodes)}, edges={len(highway_edges)}")
+                else:
+                    print(f"[Highways] Optimization failed: {payload}")
+            except Exception:
+                pass
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000  # limits FPS, dt is time since last frame
