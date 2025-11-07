@@ -1,5 +1,6 @@
 
 import pygame
+import pygame_gui
 from coastlines.svg_parser import svg_to_points
 from order_utils import add_random_orders
 from spawn_utils import spawn_not_in_coastlines
@@ -34,6 +35,7 @@ def main():
     pygame.init()
     pygame.font.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT), "theme.json")
     clock = pygame.time.Clock()
     running = True
 
@@ -43,7 +45,9 @@ def main():
     has_order_color = "green"
     no_order_color = "red"
     container_amount = 0
+    show_toggle = 0
     show_graph = True
+    show_route = True
     dt = 0
     creating_order = False
     route_manager = RouteManager(SCREEN_WIDTH, SCREEN_HEIGHT, screen)
@@ -59,6 +63,20 @@ def main():
     graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
     ship_manager.spawn_random_ships(coastlines)
+
+
+    # UI
+    btn_toggle_layer_size = 45
+    btn_toggle_layer_rect = pygame.Rect(SCREEN_WIDTH - btn_toggle_layer_size - 20, 20, btn_toggle_layer_size, btn_toggle_layer_size)
+
+    btn_toggle_layer = pygame_gui.elements.UIButton(
+        relative_rect=btn_toggle_layer_rect,
+        text='',  # no text, image-only
+        manager=manager,
+        object_id="#layer_button"
+    )
+
+
 
     while running:
         for event in pygame.event.get():
@@ -94,8 +112,22 @@ def main():
                 if event.key == pygame.K_p:
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
-                    ship_manager.toggle_ship_sensors()
-                    show_graph = not show_graph
+                    show_toggle = (show_toggle + 1) % 3
+
+                    match show_toggle:
+                        case 0:
+                            #only show map
+                            ship_manager.toggle_ship_sensors()
+                            show_graph = not show_graph
+                            show_route = not show_route
+                        case 1:
+                            #show debug state
+                            ship_manager.toggle_ship_sensors()
+                            show_graph = not show_graph
+                        case 2:
+                            #only show route
+                            show_route = not show_route
+                            
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -122,12 +154,30 @@ def main():
                             departure_port.color = "green"
                             break
 
+            manager.process_events(event)
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == btn_toggle_layer:
+                    show_toggle = (show_toggle + 1) % 3
+
+                    match show_toggle:
+                        case 0:
+                            #only show map
+                            ship_manager.toggle_ship_sensors()
+                            show_graph = not show_graph
+                            show_route = not show_route
+                        case 1:
+                            #show debug state
+                            ship_manager.toggle_ship_sensors()
+                            show_graph = not show_graph
+                        case 2:
+                            #only show route
+                            show_route = not show_route
+
+
         screen.fill((0, 105, 148))
 
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
-
-        route_manager.draw_routes()
 
         ship_manager.update_ships(coastlines)
         ship_manager.update_ports(ports, route_manager.routes)
@@ -149,10 +199,27 @@ def main():
         if show_graph:
             route_manager.draw_graph(graph, screen)
 
+        if show_route:
+            route_manager.draw_routes()
+
+        # Draw the UI last so it stays visible
+        manager.update(dt)
+        manager.draw_ui(screen)
+
         pygame.display.flip()
         dt = clock.tick(60) / 1000  # limits FPS, dt is time since last frame
     pygame.quit()
 
 
+
+# Dette kan bruges til at se hvilke functioner bruger mest CPU
+# import cProfile
+# import pstats
+
+
 if __name__ == "__main__":
-    main()
+    # with cProfile.Profile() as pr:
+        main()
+        
+        # stats = pstats.Stats(pr)
+        # stats.sort_stats(pstats.SortKey.TIME).print_stats(20)

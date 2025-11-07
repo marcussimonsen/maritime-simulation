@@ -1,0 +1,15 @@
+{
+    "#layer_button": {
+        "images": {
+            "normal_image": { "path": "Images/layers.png" },
+            "hovered_image": { "path": "Images/layers.png" },
+            "selected_image": { "path": "Images/layers.png" },
+            "disabled_image": { "path": "Images/layers.png" }
+        },
+        "colours": {
+            "normal_bg": "#00000000",
+            "hovered_bg": "#FFFFFF22",
+            "active_bg": "#FFFFFF44"
+        }
+    }
+}
