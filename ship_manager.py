@@ -49,7 +49,7 @@ class ShipManager:
     def update_ships(self, coastlines):
         for ship in self.ships:
             ship.boundary_update(1280, 720)
-            ship.flocking(self.ships)
+            ship.flocking(self.ships, surface=self.screen if self.show_ship_sensors else None)
             ship.follow_route(surface=self.screen if self.show_ship_sensors else None)
             ship.move(self.ships, coastlines, surface=self.screen if self.show_ship_sensors else None)
             ship.draw(self.screen)
