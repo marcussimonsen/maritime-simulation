@@ -1,18 +1,16 @@
-import random
 
 import pygame
 from coastlines.svg_parser import svg_to_points
 from order_utils import add_random_orders
+from spawn_utils import spawn_not_in_coastlines
 from port import Port
 from ship import Ship
 from order import Order
-from spawn_utils import spawn_not_in_coastlines
-from route import draw_route, draw_graph, create_ocean_graph, get_port_route
+from route_manager import RouteManager
 from ship_manager import ShipManager
 
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
-route = [(100, 350), (150, 350), (350, 250), (450, 500), (650, 500), (700, 300), (800, 300), (1000, 300), (1200, 300)]
 
 
 def get_distance(p1, p2):
@@ -32,17 +30,6 @@ def get_closest_coastpoint(coastlines):
     return closest_point
 
 
-def generate_routes(ports, graph, weights):
-    routes = {}
-    for i in range(len(ports)):
-        for j in range(i + 1, len(ports)):
-            a, b = ports[i], ports[j]
-            route = [(a.x, a.y)] + get_port_route(a, b, graph, weights) + [(b.x, b.y)]
-            routes[(b, a)] = route  # Store as reversed routes because of ship logic
-            routes[(a, b)] = route[::-1]
-    return routes
-
-
 def main():
     pygame.init()
     pygame.font.init()
@@ -59,7 +46,8 @@ def main():
     show_graph = True
     dt = 0
     creating_order = False
-    ship_manager = ShipManager((SCREEN_WIDTH, SCREEN_HEIGHT), screen)
+    route_manager = RouteManager(SCREEN_WIDTH, SCREEN_HEIGHT, screen)
+    ship_manager = ShipManager((SCREEN_WIDTH, SCREEN_HEIGHT), screen, route_manager.routes)
 
     port_mode = False
     capacities = [10, 20, 30]
@@ -68,8 +56,7 @@ def main():
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
     ports = []
-    graph, weights = create_ocean_graph(coastlines, SCREEN_WIDTH, SCREEN_HEIGHT, screen, grid_gap=20, min_dist=20)
-    routes = generate_routes(ports, graph, weights)
+    graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
     ship_manager.spawn_random_ships(coastlines)
 
@@ -109,8 +96,6 @@ def main():
                 if event.key == pygame.K_d:
                     ship_manager.toggle_ship_sensors()
                     show_graph = not show_graph
-                if event.key == pygame.K_g:
-                    routes = generate_routes(ports, graph, weights)
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -124,6 +109,9 @@ def main():
                         ship = Ship(port.x, port.y)
                         ship_manager.dock_ship(port, ship)
                     ports.append(port)
+
+                    # Generate routes for each new port added
+                    route_manager.generate_routes(ports, graph, weights)
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
@@ -139,11 +127,10 @@ def main():
         for c in coastlines:
             pygame.draw.polygon(screen, (228, 200, 148), c)
 
-        for r in routes.values():
-            draw_route(screen, r)
+        route_manager.draw_routes()
 
         ship_manager.update_ships(coastlines)
-        ship_manager.update_ports(ports, routes)
+        ship_manager.update_ports(ports, route_manager.routes)
 
         if port_mode:
             point = get_closest_coastpoint(coastlines)
@@ -160,7 +147,7 @@ def main():
             screen.blit(text, ((SCREEN_WIDTH // 2) - text.get_width(), (SCREEN_HEIGHT // 2) - text.get_height()))
 
         if show_graph:
-            draw_graph(graph, screen)
+            route_manager.draw_graph(graph, screen)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000  # limits FPS, dt is time since last frame

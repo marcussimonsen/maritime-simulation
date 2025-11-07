@@ -4,14 +4,14 @@ from route import Route
 
 
 class ShipManager:
-    def __init__(self, screen_size, screen):
+    def __init__(self, screen_size, screen, routes):
         self.screen_size = screen_size
         self.ships = []
         self.show_ship_sensors = True
         self.screen = screen
 
     def get_route_between(self, routes, departure_port, destination_port):
-        return routes.get((departure_port, destination_port), None)
+        return routes.get((departure_port, destination_port))
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)
@@ -36,7 +36,7 @@ class ShipManager:
         self.remove_ship(ship)
         port.add_docked_ship(ship)
 
-    def send_off_ships(self, port, routes):
+    def send_off_ships(self, routes, port):
         for order in list(port.orders):
             route = self.get_route_between(routes, port, order.destination)
             if len(port.docked_ships) < order.containers:
@@ -57,13 +57,13 @@ class ShipManager:
     def update_ports(self, ports, routes):
         for port in ports:
             self.dock_nearby_ships_to_destination_dock(port)
-            self.send_off_ships(port, routes)
+            self.send_off_ships(routes, port)
             port.draw(self.screen)
 
     def dock_nearby_ships_to_destination_dock(self, port):
         padding = 15
         for ship in self.ships:
-            if ship.destination is None: # Ignore ships that do not have a route - this is irrelevant for us, we don't want this
+            if ship.destination is None:  # Ignore ships that do not have a route - this is irrelevant for us, we don't want this
                 continue
             dist = ((ship.x - port.x) ** 2 + (ship.y - port.y) ** 2) ** 0.5
             if dist <= port.radius + padding and len(port.docked_ships) < port.capacity and ship.destination is port:

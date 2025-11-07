@@ -25,10 +25,20 @@ COHESION_FACTOR = 0.05
 ROUTE_FACTOR = 0.0005
 ROUTE_WAYPOINT_DISTANCE = 40
 
+
+def find_velocity(route, ship_position):
+    # route - pos
+    rx, ry = route[-1]
+    sx, sy = ship_position
+
+    return rx - sx, ry - sy
+
+
 def line_from_points(p1, p2):
     a = (p2[1] - p1[1]) / (p2[0] - p1[0] + 1e-10)
     b = p1[1] - a * p1[0]
     return a, b
+
 
 def closest_point(line, point):
     a, b = line
@@ -39,13 +49,14 @@ def closest_point(line, point):
 
     return x, y
 
+
 def is_point_inside_segment(line_p1, line_p2, p3):
     # NOTE: maybe we should check distance by radius from point
 
-    is_x_inside = p3[0] > min(line_p1[0], line_p2[0]) and p3[0] < max(line_p1[0], line_p2[0]) 
+    is_x_inside = p3[0] > min(line_p1[0], line_p2[0]) and p3[0] < max(line_p1[0], line_p2[0])
     is_y_inside = p3[1] > min(line_p1[1], line_p2[1]) and p3[1] < max(line_p1[1], line_p2[1])
 
-    return is_x_inside or is_y_inside # technically should be 'and', but shouldn't be a problem
+    return is_x_inside or is_y_inside  # technically should be 'and', but shouldn't be a problem
 
 
 def distance(point_a, point_b):
@@ -89,8 +100,8 @@ class Ship:
         if debug_draw:
             pygame.draw.line(surface, "green", (self.x, self.y), (self.x + self.vx * 30, self.y + self.vy * 30))
 
-
     # Update velocity to stay within boundaries
+
     def boundary_update(self, w, h):
         if self.x > w - MARGIN:
             self.vx -= TURN_FACTOR
@@ -113,12 +124,12 @@ class Ship:
             d = distance((self.x, self.y), (other.x, other.y))
 
             # theta is the angle between two ships' route vectors
-            theta = None # Ships might not have a route
+            theta = None  # Ships might not have a route
             # If both ships have routes, don't flock if route vectors differ by more than 90 degrees
             # NOTE: Maybe 90 degrees is not the optimal angle?
             if self.route is not None and other.route is not None:
-                sx, sy = route.find_velocity(self.route, (self.x, self.y))
-                ox, oy = route.find_velocity(other.route, (other.x, other.y))
+                sx, sy = find_velocity(self.route, (self.x, self.y))
+                ox, oy = find_velocity(other.route, (other.x, other.y))
                 theta = sx * ox + sy * oy
             if d < SEPARATION_DISTANCE:
                 separation_neighbors.append(other)
@@ -158,17 +169,17 @@ class Ship:
         if len(self.route) == 0:
             self.route = None
             return
-        
-        dx, dy = route.find_velocity(self.route, (self.x, self.y))
-        
+
+        dx, dy = find_velocity(self.route, (self.x, self.y))
+
         if surface is not None:
             pygame.draw.line(surface, "black", (self.x, self.y), self.route[-1])
 
         self.vx += dx * ROUTE_FACTOR
         self.vy += dy * ROUTE_FACTOR
 
-
     # Move ship, avoiding coastlines
+
     def move(self, ships, coastlines, surface=None):
         vx = 0
         vy = 0
