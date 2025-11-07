@@ -140,7 +140,7 @@ def main():
                             coastlines=coastlines,
                             bbox_min=bbox_min,
                             bbox_max=bbox_max,
-                            M=1,  # number of highway nodes
+                            M=4,  # number of highway nodes
                             R=800,  # Radius. TODO: use k-nearest (k = 6) instead
                             iters=150,
                             particles=60,

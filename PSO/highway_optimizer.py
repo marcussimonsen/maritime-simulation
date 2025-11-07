@@ -4,21 +4,40 @@ from pyswarms.single import GlobalBestPSO
 from spawn_utils import point_on_land, segment_intersects_any_polygon
 
 
-def build_adjacency(nodes, polygons, radius):
-    '''
-    Build adjacency list for nodes within radius and not blocked by polygons.
-    '''
-    n = len(nodes)
-    adj = [[] for _ in range(n)]
-    for i in range(n):
-        for j in range(i+1, n):
-            dx = nodes[i][0]-nodes[j][0]
-            dy = nodes[i][1]-nodes[j][1]
-            d = math.hypot(dx, dy)
-            if d <= radius and not segment_intersects_any_polygon(nodes[i], nodes[j], polygons):
-                adj[i].append((j, d))
-                adj[j].append((i, d))
-    return adj
+def build_adjacency(nodes, polygons, R, ports,
+                    alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0):
+    """
+    Build a 2-layer graph:
+      - layer W (open water): index 0..N-1
+      - layer H (highway):    index N..2N-1
+    Switch edges connect i(W) <-> i(H) with cost beta_switch.
+    """
+    N = len(nodes)
+    adjacency_list = [[] for _ in range(2*N)]
+
+    def add(u, v, cost):
+        adjacency_list[u].append((v, cost))
+        adjacency_list[v].append((u, cost))
+
+    for i in range(N):
+        for j in range(i+1, N):
+            x1, y1 = nodes[i]
+            x2, y2 = nodes[j]
+            dx, dy = x1 - x2, y1 - y2
+            d = math.hypot(dx, dy)  # Euclidean distance
+            if d <= R and not segment_intersects_any_polygon((x1, y1), (x2, y2), polygons):
+                add(i, j, alpha_water * d)  # W -> W
+
+                i_is_h = (i >= ports)
+                j_is_h = (j >= ports)
+                if i_is_h and j_is_h:  # ports not allowed on highway layer
+                    add(N + i, N + j, alpha_highway * d)  # H -> H
+
+    # Mode-switch (enter/exit highway)
+    for i in range(N):
+        add(i, N + i, beta_switch)
+
+    return adjacency_list  # size 2N
 
 
 def dijkstra(adj, src, dst):
@@ -44,10 +63,13 @@ def dijkstra(adj, src, dst):
 def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty):
     '''
     Create cost function for PSO.
+    Args:
+        R: connection radius
+        M: number of highway nodes
     '''
 
     ports_xy = np.array(ports_xy)  # shape (P,2)
-    P = ports_xy.shape[0]
+    ports = ports_xy.shape[0]
 
     def objective(X):
         # X shape: (n_particles, 2*M)
@@ -65,7 +87,7 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
             nodes = np.vstack([ports_xy, highway_points])  # all nodes
 
             # Graph building handles isolated nodes
-            adj = build_adjacency(nodes.tolist(), coastlines, R)
+            adj = build_adjacency(nodes.tolist(), coastlines, R, ports, beta_switch=0.0, alpha_highway=0.1)
 
             routing_cost = 0.0
             for (origin_index, destination_index, weight) in orders:
@@ -86,9 +108,12 @@ def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
     """
     Optiomize highway node positions using particle swarm optimization.
 
-    ports_xy: list[(x,y)]
-    orders: list[(origin_port_idx, dest_port_idx, weight)]
-    bbox_min/bbox_max: np.array([minx,miny]), np.array([maxx,maxy])
+    Args:
+        M: number of highway nodes
+        R: connection radius
+        ports_xy: list[(x,y)]
+        orders: list[(origin_port_idx, dest_port_idx, weight)]
+        bbox_min/bbox_max: np.array([minx,miny]), np.array([maxx,maxy])
     """
     dimensions = 2*M
 
