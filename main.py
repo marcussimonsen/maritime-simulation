@@ -19,6 +19,18 @@ from threading import Thread
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 
 
+def get_hard_coded_ports_and_orders():
+    port1 = Port(330.3, 168.0, capacity=20)
+    port2 = Port(321.588, 321.012, capacity=20)
+    port3 = Port(759.288, 371.712, capacity=20)
+    order1 = Order(destination=port3, containers=3)
+    order2 = Order(destination=port3, containers=3)
+    port1.add_order(order1)
+    port2.add_order(order2)
+
+    return [port1, port2, port3]
+
+
 def get_distance(p1, p2):
     return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
@@ -86,10 +98,10 @@ def main():
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
-    ports = []
     graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
     ship_manager.spawn_random_ships(coastlines)
+    ports = get_hard_coded_ports_and_orders()
 
     while running:
         for event in pygame.event.get():
@@ -143,7 +155,7 @@ def main():
                             M=4,  # number of highway nodes
                             R=800,  # Radius. TODO: use k-nearest (k = 6) instead
                             iters=150,
-                            particles=60,
+                            particles=40,
                             big_penalty=1e7,  # Penalty for disconnected orders
                             c2=1.8
 

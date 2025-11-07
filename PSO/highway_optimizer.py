@@ -4,8 +4,8 @@ from pyswarms.single import GlobalBestPSO
 from spawn_utils import point_on_land, segment_intersects_any_polygon
 
 
-def build_adjacency(nodes, polygons, R, ports,
-                    alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0):
+def build_adjacency_layered(nodes, polygons, R, ports,
+                            alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0):
     """
     Build a 2-layer graph:
       - layer W (open water): index 0..N-1
@@ -38,6 +38,20 @@ def build_adjacency(nodes, polygons, R, ports,
         add(i, N + i, beta_switch)
 
     return adjacency_list  # size 2N
+
+
+def build_adjacency(nodes, polygons, radius):
+    n = len(nodes)
+    adj = [[] for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            dx = nodes[i][0] - nodes[j][0]
+            dy = nodes[i][1] - nodes[j][1]
+            d = math.hypot(dx, dy)
+            if d <= radius and not segment_intersects_any_polygon(nodes[i], nodes[j], polygons):
+                adj[i].append((j, d))
+                adj[j].append((i, d))
+    return adj
 
 
 def dijkstra(adj, src, dst):
@@ -87,7 +101,7 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
             nodes = np.vstack([ports_xy, highway_points])  # all nodes
 
             # Graph building handles isolated nodes
-            adj = build_adjacency(nodes.tolist(), coastlines, R, ports, beta_switch=0.0, alpha_highway=0.1)
+            adj = build_adjacency_layered(nodes.tolist(), coastlines, R, ports, beta_switch=0.0, alpha_highway=0.1)
 
             routing_cost = 0.0
             for (origin_index, destination_index, weight) in orders:
