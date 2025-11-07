@@ -96,8 +96,6 @@ def main():
                 if event.key == pygame.K_d:
                     ship_manager.toggle_ship_sensors()
                     show_graph = not show_graph
-                if event.key == pygame.K_g:
-                    route_manager.generate_routes(ports, graph, weights)
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -111,6 +109,9 @@ def main():
                         ship = Ship(port.x, port.y)
                         ship_manager.dock_ship(port, ship)
                     ports.append(port)
+
+                    # Generate routes for each new port added
+                    route_manager.generate_routes(ports, graph, weights)
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
