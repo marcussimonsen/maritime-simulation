@@ -5,6 +5,9 @@ from spawn_utils import point_on_land, segment_intersects_any_polygon
 
 
 def build_adjacency(nodes, polygons, radius):
+    '''
+    Build adjacency list for nodes within radius and not blocked by polygons.
+    '''
     n = len(nodes)
     adj = [[] for _ in range(n)]
     for i in range(n):
@@ -38,83 +41,82 @@ def dijkstra(adj, src, dst):
     return float('inf')
 
 
-def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, spread_lambda=0.0):
+def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty):
+    '''
+    Create cost function for PSO.
+    '''
+
     ports_xy = np.array(ports_xy)  # shape (P,2)
     P = ports_xy.shape[0]
 
     def objective(X):
         # X shape: (n_particles, 2*M)
 
-        costs = np.zeros(X.shape[0], dtype=float)
+        costs = np.zeros(X.shape[0], dtype=float)  # cost value for each particle
+
         for k in range(X.shape[0]):
-            vec = X[k].reshape(M, 2)
+            highway_points = X[k].reshape(M, 2)
+
             # Bound check + on-land check
-            oob = np.any((vec < bbox_min) | (vec > bbox_max), axis=1)
-            onland = np.array([point_on_land(tuple(pt), coastlines) for pt in vec])
-            hard_pen = (oob | onland).sum() * big_penalty
+            is_out_of_bounds = np.any((highway_points < bbox_min) | (highway_points > bbox_max), axis=1)
+            onland = np.array([point_on_land(tuple(point), coastlines) for point in highway_points])
+            penalty = (is_out_of_bounds | onland).sum() * big_penalty
 
-            nodes = np.vstack([ports_xy, vec])  # all nodes
-            # If any highway node is isolated by land, graph build will handle it
+            nodes = np.vstack([ports_xy, highway_points])  # all nodes
 
-            # Build adjacency
+            # Graph building handles isolated nodes
             adj = build_adjacency(nodes.tolist(), coastlines, R)
 
-            # Routing cost
-            routing = 0.0
-            for (o, d, w) in orders:
-                # o,d are port indices [0..P-1]
-                sp = dijkstra(adj, int(o), int(d))
-                if math.isinf(sp):
-                    routing += big_penalty
+            routing_cost = 0.0
+            for (origin_index, destination_index, weight) in orders:
+                shortest_path = dijkstra(adj, origin_index, destination_index)
+                if math.isinf(shortest_path):
+                    routing_cost += big_penalty
                 else:
-                    routing += w * sp
+                    routing_cost += weight * shortest_path
 
-            # Optional: discourage node overlap (soft spread)
-            spread_pen = 0.0
-            if spread_lambda > 0.0 and M > 1:
-                dmat = np.linalg.norm(vec[:, None, :] - vec[None, :, :], axis=2) + np.eye(M)*1e9
-                spread_pen = spread_lambda * np.sum(np.exp(-(dmat/200.0)))  # 200 px scale
-
-            costs[k] = routing + hard_pen + spread_pen
+            costs[k] = routing_cost + penalty
         return costs
     return objective
 
 
 def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
                       M=6, R=250.0, iters=120, particles=60,
-                      c1=1.4, c2=1.6, w=0.7, big_penalty=1e7, spread_lambda=0.0):
+                      c1=1.4, c2=1.6, w=0.7, big_penalty=1e7):
     """
     Optiomize highway node positions using particle swarm optimization.
 
     ports_xy: list[(x,y)]
     orders: list[(origin_port_idx, dest_port_idx, weight)]
-    coastlines: list of polygons, each polygon is list[(x,y)] in screen coords
     bbox_min/bbox_max: np.array([minx,miny]), np.array([maxx,maxy])
     """
-    dim = 2*M
+    dimensions = 2*M
+
+    # below is because each highway node has seperate bounds (although they are the same)
     lower = np.tile(bbox_min, M)
     upper = np.tile(bbox_max, M)
     bounds = (lower, upper)
 
-    obj = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, spread_lambda)
+    cost_function = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty)
 
     optimizer = GlobalBestPSO(
         n_particles=particles,
-        dimensions=dim,
+        dimensions=dimensions,
         options={'c1': c1, 'c2': c2, 'w': w},
         bounds=bounds
     )
-    best_cost, best_pos = optimizer.optimize(obj, iters=iters, verbose=False)
+    verbose = True
+    best_cost, best_pos = optimizer.optimize(cost_function, iters=iters, verbose=verbose)
     highway_nodes = best_pos.reshape(M, 2)
 
     # Build final graph (ports + highways) and edges for drawing
     all_nodes = np.vstack([np.array(ports_xy), highway_nodes])
-    adj = build_adjacency(all_nodes.tolist(), coastlines, R)
+    adjacency_list = build_adjacency(all_nodes.tolist(), coastlines, R)
 
     edges = []
-    for u, nbrs in enumerate(adj):
-        for v, w in nbrs:
-            if u < v:
+    for u, neighbors in enumerate(adjacency_list):
+        for v, weight in neighbors:
+            if u < v:  # to avoid duplicates
                 edges.append((u, v))
 
     return highway_nodes, edges, best_cost, all_nodes

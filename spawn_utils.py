@@ -42,9 +42,7 @@ def segments_intersect(p1, p2, q1, q2, eps=EPS):
     o3 = orient(q1, q2, p1)
     o4 = orient(q1, q2, p2)
 
-    # Fast reject for collinear cases
-    if abs(o1) < eps and on_segment(p1, p2, q1):  # q1 on p1p2
-        # touching (endpoint or along) -> not a proper crossing
+    if abs(o1) < eps and on_segment(p1, p2, q1):
         return False
     if abs(o2) < eps and on_segment(p1, p2, q2):
         return False

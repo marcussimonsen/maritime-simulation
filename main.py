@@ -37,6 +37,11 @@ def get_closest_coastpoint(coastlines):
 
 
 def collect_ports_and_orders(ports):
+    '''
+    returns pair of:
+    ports_xy: List of (x,y) tuples
+    orders: List of (origin_index, dest_index, containers)
+    '''
     ports_xy = [(port.x, port.y) for port in ports]
     orders = []
     for origin_index, port in enumerate(ports):
@@ -140,7 +145,8 @@ def main():
                             iters=150,
                             particles=60,
                             big_penalty=1e7,  # Penalty for disconnected orders
-                            spread_lambda=0.0
+                            c2=1.8
+
                         )
                         optimize_cancel_event.clear()
                         optimizing = True
