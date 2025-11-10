@@ -1,11 +1,27 @@
+import math
 import random
-from typing import List, Tuple
+import pygame
 
-Point = Tuple[int, int]
-Polygon = List[Point]
 EPS = 1e-9
 
-# TODO: refactor to geometry_utils.py
+def get_distance(p1, p2):
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
+
+def vector_dot_product(v1, v2):
+    # Same direction: positive
+    # Opposite direction: negtive
+    # Orthogonal: zero
+    return v1[0] * v2[0] + v1[1] * v2[1]
+
+
+def distance(point_a, point_b):
+    ax, ay = point_a
+    bx, by = point_b
+    return math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
+
+
+def magnitude(v):
+    return math.sqrt(v[0] * v[0] + v[1] * v[1])
 
 
 def point_in_polygon(point, poly):
@@ -22,6 +38,17 @@ def point_in_polygon(point, poly):
         j = i
     return inside
 
+def get_closest_coastpoint(coastlines):
+    x, y = pygame.mouse.get_pos()
+    closest_point = (0, 0)
+    min_dist = float('inf')
+    for coastline in coastlines:
+        for point in coastline:
+            dist = distance((x, y), point)
+            if dist < min_dist:
+                min_dist = dist
+                closest_point = point
+    return closest_point
 
 def point_on_land(pt, polygons):
     return any(point_in_polygon(pt, poly) for poly in polygons)
@@ -64,14 +91,3 @@ def segment_intersects_any_polygon(p, q, polygons):
                 return True
     return False
 
-
-def spawn_not_in_coastlines(coastlines, w, h, margin=0, max_attempts=1000):
-    """Return a random (x,y) not inside any coastline. Falls back to center if none found."""
-    for _ in range(max_attempts):
-        x = random.randint(margin+1000, w - margin)  # TODO: function take minimum x and y as well
-        y = random.randint(margin, h - margin)
-        if not any(point_in_polygon((x, y), poly) for poly in coastlines):
-            return x, y
-    # fallback: return map center (deterministic, safer than an arbitrary hardcoded point)
-    print("Warning: spawn_not_in_coastlines failed to find free spot — using map center fallback")
-    return w // 2, h // 2

@@ -1,21 +1,20 @@
+from queue import Queue
+from threading import Event, Thread
 
+import numpy as np
 import pygame
 import pygame_gui
-from coastlines.svg_parser import svg_to_points
-from order_utils import add_random_orders
-from spawn_utils import spawn_not_in_coastlines
-from PSO.highway_optimizer import optimize_highways
-from port import Port
-from ship import Ship
-from order import Order
-from route_manager import RouteManager
-from ship_manager import ShipManager
-import numpy as np
-from threading import Event
-from queue import Queue
-from PSO.optimizer_worker import run_optimizer_task
-from threading import Thread
 
+from coastlines.svg_parser import svg_to_points
+from order import Order
+from port import Port
+from PSO.highway_optimizer import optimize_highways
+from PSO.optimizer_worker import run_optimizer_task
+from route_manager import RouteManager
+from ship import Ship
+from ship_manager import ShipManager
+from utils.order_utils import add_random_orders
+from utils.math_utils import distance, get_closest_coastpoint
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 
@@ -39,23 +38,6 @@ def get_hard_coded_ports_and_orders():
     port2.add_order(order2)
 
     return [port1, port2, port3]
-
-
-def get_distance(p1, p2):
-    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
-
-
-def get_closest_coastpoint(coastlines):
-    x, y = pygame.mouse.get_pos()
-    closest_point = (0, 0)
-    min_dist = float('inf')
-    for coastline in coastlines:
-        for point in coastline:
-            dist = get_distance((x, y), point)
-            if dist < min_dist:
-                min_dist = dist
-                closest_point = point
-    return closest_point
 
 
 def collect_ports_and_orders(ports):
@@ -166,7 +148,7 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
-                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        dist = distance((mouse_x, mouse_y), (port.x, port.y))
                         if dist <= port.radius and port != departure_port:
                             destination_port = port
                             num_containers = container_amount
@@ -177,8 +159,6 @@ def main():
                     continue
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
                 if event.key == pygame.K_p:
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
@@ -236,7 +216,7 @@ def main():
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
-                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        dist = distance((mouse_x, mouse_y), (port.x, port.y))
                         if dist <= port.radius:
                             creating_order = True
                             departure_port = port

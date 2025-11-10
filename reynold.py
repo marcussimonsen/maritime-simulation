@@ -2,7 +2,7 @@ import math
 
 import pygame
 
-from utils import vector_dot_product, distance, magnitude
+from utils.math_utils import vector_dot_product, distance, magnitude
 
 def alignment(ship, neighbors) -> tuple[float, float]|None:
     avg_velx = 0
