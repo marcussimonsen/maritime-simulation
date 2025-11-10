@@ -2,7 +2,7 @@ import math
 import heapq
 import numpy as np
 from pyswarms.single import GlobalBestPSO
-from spawn_utils import point_on_land, segment_intersects_any_polygon
+from utils.math_utils import point_on_land, segment_intersects_any_polygon
 from collections import defaultdict
 from math import inf
 

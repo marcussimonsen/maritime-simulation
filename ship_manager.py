@@ -1,7 +1,18 @@
-from ship import Ship
-from spawn_utils import spawn_not_in_coastlines
 from route import Route
+from ship import Ship
+import random
+from utils.math_utils import point_in_polygon
 
+def spawn_not_in_coastlines(coastlines, w, h, margin=0, max_attempts=1000):
+        """Return a random (x,y) not inside any coastline. Falls back to center if none found."""
+        for _ in range(max_attempts):
+            x = random.randint(margin+1000, w - margin)  # TODO: function take minimum x and y as well
+            y = random.randint(margin, h - margin)
+            if not any(point_in_polygon((x, y), poly) for poly in coastlines):
+                return x, y
+        # fallback: return map center (deterministic, safer than an arbitrary hardcoded point)
+        print("Warning: spawn_not_in_coastlines failed to find free spot — using map center fallback")
+        return w // 2, h // 2
 
 class ShipManager:
     def __init__(self, screen_size, screen, routes):

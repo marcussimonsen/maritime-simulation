@@ -6,7 +6,7 @@ import numpy as np
 import pygame
 
 from port import Port
-from spawn_utils import point_in_polygon
+from utils.math_utils import point_in_polygon
 
 
 class RouteManager:
