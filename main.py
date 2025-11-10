@@ -164,13 +164,13 @@ def main():
                             bbox_max=bbox_max,
                             M=4,  # number of highway nodes
                             R=800,  # Radius. TODO: use k-nearest (k = 6) instead?
-                            iters=150,
+                            iters=50,
                             particles=40,
                             big_penalty=1e7,  # Penalty for disconnected orders
                             c2=1.8,
                             alpha_water=1.0,
-                            alpha_highway=0.5,
-                            beta_switch=10.0,
+                            alpha_highway=0.3,
+                            beta_switch=1.0,
 
                         )
                         optimize_cancel_event.clear()
