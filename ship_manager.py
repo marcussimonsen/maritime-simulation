@@ -9,6 +9,7 @@ class ShipManager:
         self.ships = []
         self.show_ship_sensors = True
         self.screen = screen
+        self.send_ships_immidiately = False
 
     def get_route_between(self, routes, departure_port, destination_port):
         return routes.get((departure_port, destination_port))
@@ -57,7 +58,9 @@ class ShipManager:
     def update_ports(self, ports, routes):
         for port in ports:
             self.dock_nearby_ships_to_destination_dock(port)
-            # self.send_off_ships(routes, port) # TODO: disabled for now
+            if self.send_ships_immidiately:
+                # TODO: fix this
+                self.send_off_ships(routes, port)
             port.draw(self.screen)
 
     def dock_nearby_ships_to_destination_dock(self, port):
@@ -68,6 +71,9 @@ class ShipManager:
             dist = ((ship.x - port.x) ** 2 + (ship.y - port.y) ** 2) ** 0.5
             if dist <= port.radius + padding and len(port.docked_ships) < port.capacity and ship.destination is port:
                 self.dock_ship(port, ship)
+
+    def toggle_send_ships_immidiately(self):
+        self.send_ships_immidiately = not self.send_ships_immidiately
 
     def toggle_ship_sensors(self):
         self.show_ship_sensors = not self.show_ship_sensors

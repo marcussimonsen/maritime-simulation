@@ -183,6 +183,8 @@ def main():
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
                     show_toggle, show_graph, show_route = toggle_layer(show_toggle, ship_manager, show_graph, show_route)
+                if event.key == pygame.K_y:
+                    ship_manager.toggle_send_ships_immidiately()
                 if event.key == pygame.K_h:
                     if not optimizing:
                         ports_xy, orders = collect_ports_and_orders(ports)
@@ -203,7 +205,6 @@ def main():
                             alpha_water=1.0,
                             alpha_highway=0.3,
                             beta_switch=1.0,
-
                         )
                         optimize_cancel_event.clear()
                         optimizing = True
