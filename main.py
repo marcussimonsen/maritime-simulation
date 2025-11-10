@@ -10,6 +10,7 @@ from ship import Ship
 from order import Order
 from route_manager import RouteManager
 from ship_manager import ShipManager
+from utils import distance
 import numpy as np
 from threading import Event
 from queue import Queue
@@ -41,17 +42,13 @@ def get_hard_coded_ports_and_orders():
     return [port1, port2, port3]
 
 
-def get_distance(p1, p2):
-    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
-
-
 def get_closest_coastpoint(coastlines):
     x, y = pygame.mouse.get_pos()
     closest_point = (0, 0)
     min_dist = float('inf')
     for coastline in coastlines:
         for point in coastline:
-            dist = get_distance((x, y), point)
+            dist = distance((x, y), point)
             if dist < min_dist:
                 min_dist = dist
                 closest_point = point
@@ -166,7 +163,7 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
-                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        dist = distance((mouse_x, mouse_y), (port.x, port.y))
                         if dist <= port.radius and port != departure_port:
                             destination_port = port
                             num_containers = container_amount
@@ -236,7 +233,7 @@ def main():
                 else:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     for port in ports:
-                        dist = get_distance((mouse_x, mouse_y), (port.x, port.y))
+                        dist = distance((mouse_x, mouse_y), (port.x, port.y))
                         if dist <= port.radius:
                             creating_order = True
                             departure_port = port

@@ -1,6 +1,7 @@
 from ship import Ship
 from spawn_utils import spawn_not_in_coastlines
 from route import Route
+from utils import distance
 
 
 class ShipManager:
@@ -68,7 +69,7 @@ class ShipManager:
         for ship in self.ships:
             if ship.destination is None:  # Ignore ships that do not have a route - this is irrelevant for us, we don't want this
                 continue
-            dist = ((ship.x - port.x) ** 2 + (ship.y - port.y) ** 2) ** 0.5
+            dist = distance((ship.x, ship.y), (port.x, port.y))
             if dist <= port.radius + padding and len(port.docked_ships) < port.capacity and ship.destination is port:
                 self.dock_ship(port, ship)
 

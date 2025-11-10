@@ -5,6 +5,7 @@ from pyswarms.single import GlobalBestPSO
 from spawn_utils import point_on_land, segment_intersects_any_polygon
 from collections import defaultdict
 from math import inf
+from utils import hypot
 
 
 def layered_index_base(idx, N):
@@ -43,7 +44,7 @@ def build_adjacency_layered(nodes, polygons, R, ports,
             x1, y1 = nodes[i]
             x2, y2 = nodes[j]
             dx, dy = x1 - x2, y1 - y2
-            d = math.hypot(dx, dy)  # Euclidean distance
+            d = hypot(dx, dy)  # Euclidean distance
             if d <= R and not segment_intersects_any_polygon((x1, y1), (x2, y2), polygons):
                 add(i, j, alpha_water * d)  # W -> W
 
@@ -66,7 +67,7 @@ def build_adjacency(nodes, polygons, radius):
         for j in range(i + 1, n):
             dx = nodes[i][0] - nodes[j][0]
             dy = nodes[i][1] - nodes[j][1]
-            d = math.hypot(dx, dy)
+            d = hypot(dx, dy)
             if d <= radius and not segment_intersects_any_polygon(nodes[i], nodes[j], polygons):
                 adj[i].append((j, d))
                 adj[j].append((i, d))

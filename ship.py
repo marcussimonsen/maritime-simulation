@@ -3,6 +3,7 @@ import math
 
 from reynold import separation, cohesion, alignment, kelvin_cohesion
 import route
+from utils import distance, magnitude
 
 TURN_FACTOR = .1
 COASTLINE_TURN_FACTOR = 0.1
@@ -57,12 +58,6 @@ def is_point_inside_segment(line_p1, line_p2, p3):
     is_y_inside = p3[1] > min(line_p1[1], line_p2[1]) and p3[1] < max(line_p1[1], line_p2[1])
 
     return is_x_inside or is_y_inside  # technically should be 'and', but shouldn't be a problem
-
-
-def distance(point_a, point_b):
-    ax, ay = point_a
-    bx, by = point_b
-    return math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
 
 
 class Ship:
@@ -229,7 +224,7 @@ class Ship:
         # NOTE: This is here because it is weird that further away gives stronger force
         # This gives constant force
         # Also good, since force then won't depend on granularity of coastline
-        mag = math.sqrt(vx ** 2 + vy ** 2)
+        mag = magnitude((vx, vy))
         if mag != 0:
             vx = vx / mag * 100
             vy = vy / mag * 100
@@ -242,7 +237,7 @@ class Ship:
         self.vy += vy * COASTLINE_TURN_FACTOR
 
         # Use target speed and go towards that instead
-        velocity = math.sqrt(self.vx ** 2 + self.vy ** 2)
+        velocity = magnitude((self.vx, self.vy))
         if velocity > MAX_VELOCITY:
             factor = 1 / velocity * MAX_VELOCITY
             self.vx *= factor
