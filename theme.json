@@ -1,15 +1,20 @@
 {
     "#layer_button": {
         "images": {
-            "normal_image": { "path": "Images/layers.png" },
-            "hovered_image": { "path": "Images/layers.png" },
-            "selected_image": { "path": "Images/layers.png" },
-            "disabled_image": { "path": "Images/layers.png" }
+            "normal_image": { "path": "Images/layers(2).png"},
+            "hovered_image": { "path": "Images/layers(2).png" },
+            "selected_image": { "path": "Images/layers(2).png" },
+            "disabled_image": { "path": "Images/layers(2).png" }
         },
         "colours": {
             "normal_bg": "#00000000",
             "hovered_bg": "#FFFFFF22",
-            "active_bg": "#FFFFFF44"
+            "active_bg": "#FFFFFF44",
+            "normal_border": "#00000000",
+            "hovered_border": "#00000000",
+            "disabled_border": "#00000000",
+            "selected_border": "#00000000",
+            "active_border": "#00000000"
         }
     }
 }

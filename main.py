@@ -65,7 +65,7 @@ def main():
     ship_manager.spawn_random_ships(coastlines)
 
 
-    # UI
+    ### Button ###
     btn_toggle_layer_size = 45
     btn_toggle_layer_rect = pygame.Rect(SCREEN_WIDTH - btn_toggle_layer_size - 20, 20, btn_toggle_layer_size, btn_toggle_layer_size)
 
@@ -76,6 +76,25 @@ def main():
         object_id="#layer_button"
     )
 
+    def toggle_layer(show_toggle, ship_manager, show_graph, show_route):
+        show_toggle = (show_toggle + 1) % 3
+
+        match show_toggle:
+            case 0:
+                #only show map
+                ship_manager.toggle_ship_sensors()
+                show_graph = not show_graph
+                show_route = not show_route
+            case 1:
+                #show debug state
+                ship_manager.toggle_ship_sensors()
+                show_graph = not show_graph
+            case 2:
+                #only show route
+                show_route = not show_route
+        
+        return show_toggle, show_graph, show_route
+    ###
 
 
     while running:
@@ -112,22 +131,7 @@ def main():
                 if event.key == pygame.K_p:
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
-                    show_toggle = (show_toggle + 1) % 3
-
-                    match show_toggle:
-                        case 0:
-                            #only show map
-                            ship_manager.toggle_ship_sensors()
-                            show_graph = not show_graph
-                            show_route = not show_route
-                        case 1:
-                            #show debug state
-                            ship_manager.toggle_ship_sensors()
-                            show_graph = not show_graph
-                        case 2:
-                            #only show route
-                            show_route = not show_route
-                            
+                    show_toggle, show_graph, show_route = toggle_layer(show_toggle, ship_manager, show_graph, show_route)
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -153,25 +157,13 @@ def main():
                             departure_port = port
                             departure_port.color = "green"
                             break
-
-            manager.process_events(event)
+            
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == btn_toggle_layer:
-                    show_toggle = (show_toggle + 1) % 3
+                    show_toggle, show_graph, show_route = toggle_layer(show_toggle, ship_manager, show_graph, show_route)
 
-                    match show_toggle:
-                        case 0:
-                            #only show map
-                            ship_manager.toggle_ship_sensors()
-                            show_graph = not show_graph
-                            show_route = not show_route
-                        case 1:
-                            #show debug state
-                            ship_manager.toggle_ship_sensors()
-                            show_graph = not show_graph
-                        case 2:
-                            #only show route
-                            show_route = not show_route
+            manager.process_events(event)
+            
 
 
         screen.fill((0, 105, 148))
@@ -211,15 +203,5 @@ def main():
     pygame.quit()
 
 
-
-# Dette kan bruges til at se hvilke functioner bruger mest CPU
-# import cProfile
-# import pstats
-
-
 if __name__ == "__main__":
-    # with cProfile.Profile() as pr:
-        main()
-        
-        # stats = pstats.Stats(pr)
-        # stats.sort_stats(pstats.SortKey.TIME).print_stats(20)
+    main()
