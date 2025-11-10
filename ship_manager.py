@@ -57,7 +57,7 @@ class ShipManager:
     def update_ports(self, ports, routes):
         for port in ports:
             self.dock_nearby_ships_to_destination_dock(port)
-            self.send_off_ships(routes, port)
+            # self.send_off_ships(routes, port) # TODO: disabled for now
             port.draw(self.screen)
 
     def dock_nearby_ships_to_destination_dock(self, port):

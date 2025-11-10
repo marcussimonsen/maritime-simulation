@@ -16,7 +16,7 @@ class Port:
 
     def remove_order(self, order):
         # WARN: Linear running time in the amount of orders
-        self.orders.remove(order)    
+        self.orders.remove(order)
 
     def add_docked_ship(self, ship):
         self.docked_ships.append(ship)

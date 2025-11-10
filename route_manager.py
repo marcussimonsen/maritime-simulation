@@ -15,6 +15,20 @@ class RouteManager:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.screen = screen
+        self.splitting_cost = 50
+        self.merging_cost = 30
+        self.energy_cost_per_pixel = 0.01
+
+    def draw_graph(self, graph: dict, screen):
+        for point in graph.keys():
+            pygame.draw.circle(screen, (0, 0, 0), point, 1)
+
+    def draw_route(self, route):
+        for a, b in zip(route, route[1:]):
+            pygame.draw.line(self.screen, "red", a, b)
+
+    def find_optimal_routes(self, orders):
+        pass
 
     def close_to_coastline(self, point, coastlines, min_dist):
         for poly in coastlines:
@@ -74,14 +88,6 @@ class RouteManager:
                     weight[(x, y), (x2, y2)] = np.sqrt((grid_gap*2) ** 2 + grid_gap ** 2)
 
         return graph, weight
-
-    def draw_graph(self, graph: dict, screen):
-        for point in graph.keys():
-            pygame.draw.circle(screen, (0, 0, 0), point, 1)
-
-    def draw_route(self, route):
-        for a, b in zip(route, route[1:]):
-            pygame.draw.line(self.screen, "red", a, b)
 
     def dijkstra(self, graph, weight, s, t):
         """

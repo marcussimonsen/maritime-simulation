@@ -4,14 +4,41 @@ import pygame_gui
 from coastlines.svg_parser import svg_to_points
 from order_utils import add_random_orders
 from spawn_utils import spawn_not_in_coastlines
+from PSO.highway_optimizer import optimize_highways
 from port import Port
 from ship import Ship
 from order import Order
 from route_manager import RouteManager
 from ship_manager import ShipManager
+import numpy as np
+from threading import Event
+from queue import Queue
+from PSO.optimizer_worker import run_optimizer_task
+from threading import Thread
 
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
+
+route_colors = [
+    (255, 100, 100),  # red-ish
+    (100, 255, 100),  # green-ish
+    (100, 100, 255),  # blue-ish
+    (255, 200, 100),  # orange-ish
+    (200, 100, 255),  # purple-ish
+    (100, 255, 255),  # cyan-ish
+]
+
+
+def get_hard_coded_ports_and_orders():
+    port1 = Port(330.3, 168.0, capacity=20)
+    port2 = Port(321.588, 321.012, capacity=20)
+    port3 = Port(759.288, 371.712, capacity=20)
+    order1 = Order(destination=port3, containers=3)
+    order2 = Order(destination=port3, containers=3)
+    port1.add_order(order1)
+    port2.add_order(order2)
+
+    return [port1, port2, port3]
 
 
 def get_distance(p1, p2):
@@ -29,6 +56,22 @@ def get_closest_coastpoint(coastlines):
                 min_dist = dist
                 closest_point = point
     return closest_point
+
+
+def collect_ports_and_orders(ports):
+    '''
+    returns pair of:
+    ports_xy: List of (x,y) tuples
+    orders: List of (origin_index, dest_index, containers)
+    '''
+    ports_xy = [(port.x, port.y) for port in ports]
+    orders = []
+    for origin_index, port in enumerate(ports):
+        for order in port.orders:
+            dest_index = ports.index(order.destination)
+            orders.append((origin_index, dest_index, order.containers))
+
+    return ports_xy, orders
 
 
 def main():
@@ -53,17 +96,26 @@ def main():
     route_manager = RouteManager(SCREEN_WIDTH, SCREEN_HEIGHT, screen)
     ship_manager = ShipManager((SCREEN_WIDTH, SCREEN_HEIGHT), screen, route_manager.routes)
 
+    # TODO: Opmtimization state: move from main
+    highway_nodes = None
+    highway_edges = None
+    all_nodes_for_draw = None
+    order_paths_xy = None
+    optimizing = False
+    optimize_result_queue = Queue()
+    optimize_cancel_event = Event()
+    optimizer_thread = None
+
     port_mode = False
     capacities = [10, 20, 30]
     capacity_index = 0
 
     coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
 
-    ports = []
     graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
     ship_manager.spawn_random_ships(coastlines)
-
+    ports = get_hard_coded_ports_and_orders()
 
     ### Button ###
     btn_toggle_layer_size = 45
@@ -81,21 +133,20 @@ def main():
 
         match show_toggle:
             case 0:
-                #only show map
+                # only show map
                 ship_manager.toggle_ship_sensors()
                 show_graph = not show_graph
                 show_route = not show_route
             case 1:
-                #show debug state
+                # show debug state
                 ship_manager.toggle_ship_sensors()
                 show_graph = not show_graph
             case 2:
-                #only show route
+                # only show route
                 show_route = not show_route
-        
+
         return show_toggle, show_graph, show_route
     ###
-
 
     while running:
         for event in pygame.event.get():
@@ -132,6 +183,39 @@ def main():
                     port_mode = not port_mode
                 if event.key == pygame.K_d:
                     show_toggle, show_graph, show_route = toggle_layer(show_toggle, ship_manager, show_graph, show_route)
+                if event.key == pygame.K_h:
+                    if not optimizing:
+                        ports_xy, orders = collect_ports_and_orders(ports)
+                        bbox_min = np.array([0.0, 0.0])
+                        bbox_max = np.array([SCREEN_WIDTH, SCREEN_HEIGHT])
+                        kwargs = dict(
+                            ports_xy=ports_xy,
+                            orders=orders,
+                            coastlines=coastlines,
+                            bbox_min=bbox_min,
+                            bbox_max=bbox_max,
+                            M=4,  # number of highway nodes
+                            R=800,  # Radius. TODO: use k-nearest (k = 6) instead?
+                            iters=50,
+                            particles=40,
+                            big_penalty=1e7,  # Penalty for disconnected orders
+                            c2=1.8,
+                            alpha_water=1.0,
+                            alpha_highway=0.3,
+                            beta_switch=1.0,
+
+                        )
+                        optimize_cancel_event.clear()
+                        optimizing = True
+
+                        optimizer_thread = Thread(
+                            target=run_optimizer_task,
+                            args=(optimize_highways, kwargs, optimize_result_queue, optimize_cancel_event),
+                            daemon=True
+                        )
+                        optimizer_thread.start()
+                        print("[Highways] Optimization started...")
+
                 if event.key == pygame.K_UP:
                     capacity_index = (capacity_index + 1) % len(capacities)
                 if event.key == pygame.K_DOWN:
@@ -157,14 +241,12 @@ def main():
                             departure_port = port
                             departure_port.color = "green"
                             break
-            
+
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == btn_toggle_layer:
                     show_toggle, show_graph, show_route = toggle_layer(show_toggle, ship_manager, show_graph, show_route)
 
             manager.process_events(event)
-            
-
 
         screen.fill((0, 105, 148))
 
@@ -191,6 +273,45 @@ def main():
         if show_graph:
             route_manager.draw_graph(graph, screen)
 
+        if highway_nodes is not None and all_nodes_for_draw is not None and highway_edges is not None:
+            for edge in highway_edges:
+                u, v = edge
+                start_pos = all_nodes_for_draw[u]
+                end_pos = all_nodes_for_draw[v]
+                pygame.draw.line(screen, (255, 255, 255), start_pos, end_pos, 3)
+
+            for node in highway_nodes:
+                pygame.draw.circle(screen, (255, 255, 255), (int(node[0]), int(node[1])), 5)
+
+            if order_paths_xy is not None:
+                for i, poly in enumerate(order_paths_xy):
+                    color = route_colors[i % len(route_colors)]
+                    for a, b in zip(poly, poly[1:]):
+                        pygame.draw.line(
+                            screen,
+                            color,
+                            (a[0], a[1]),
+                            (b[0], b[1]),
+                            5,
+                        )
+
+        if optimizing:
+            font = pygame.font.SysFont(None, 24)
+            txt = font.render("Optimizing highways…", True, (255, 255, 255))
+            screen.blit(txt, (10, 10))
+
+        # Poll results
+        if optimizing:
+            try:
+                ok, payload = optimize_result_queue.get_nowait()
+                optimizing = False
+                if ok:
+                    highway_nodes, highway_edges, best_cost, all_nodes_for_draw, order_paths_xy = payload
+                    print(f"[Highways] Optimization finished: cost={best_cost:.2f}, nodes={len(highway_nodes)}, edges={len(highway_edges)}")
+                else:
+                    print(f"[Highways] Optimization failed: {payload}")
+            except Exception:
+                pass
         if show_route:
             route_manager.draw_routes()
 
