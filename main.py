@@ -18,6 +18,15 @@ from threading import Thread
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 
+route_colors = [
+    (255, 100, 100),  # red-ish
+    (100, 255, 100),  # green-ish
+    (100, 100, 255),  # blue-ish
+    (255, 200, 100),  # orange-ish
+    (200, 100, 255),  # purple-ish
+    (100, 255, 255),  # cyan-ish
+]
+
 
 def get_hard_coded_ports_and_orders():
     port1 = Port(330.3, 168.0, capacity=20)
@@ -87,6 +96,7 @@ def main():
     highway_nodes = None
     highway_edges = None
     all_nodes_for_draw = None
+    order_paths_xy = None
     optimizing = False
     optimize_result_queue = Queue()
     optimize_cancel_event = Event()
@@ -153,11 +163,14 @@ def main():
                             bbox_min=bbox_min,
                             bbox_max=bbox_max,
                             M=4,  # number of highway nodes
-                            R=800,  # Radius. TODO: use k-nearest (k = 6) instead
+                            R=800,  # Radius. TODO: use k-nearest (k = 6) instead?
                             iters=150,
                             particles=40,
                             big_penalty=1e7,  # Penalty for disconnected orders
-                            c2=1.8
+                            c2=1.8,
+                            alpha_water=1.0,
+                            alpha_highway=0.5,
+                            beta_switch=10.0,
 
                         )
                         optimize_cancel_event.clear()
@@ -231,6 +244,18 @@ def main():
             for node in highway_nodes:
                 pygame.draw.circle(screen, (255, 255, 255), (int(node[0]), int(node[1])), 5)
 
+            if order_paths_xy is not None:
+                for i, poly in enumerate(order_paths_xy):
+                    color = route_colors[i % len(route_colors)]
+                    for a, b in zip(poly, poly[1:]):
+                        pygame.draw.line(
+                            screen,
+                            color,
+                            (a[0], a[1]),
+                            (b[0], b[1]),
+                            5,
+                        )
+
         if optimizing:
             font = pygame.font.SysFont(None, 24)
             txt = font.render("Optimizing highways…", True, (255, 255, 255))
@@ -242,7 +267,7 @@ def main():
                 ok, payload = optimize_result_queue.get_nowait()
                 optimizing = False
                 if ok:
-                    highway_nodes, highway_edges, best_cost, all_nodes_for_draw = payload
+                    highway_nodes, highway_edges, best_cost, all_nodes_for_draw, order_paths_xy = payload
                     print(f"[Highways] Optimization finished: cost={best_cost:.2f}, nodes={len(highway_nodes)}, edges={len(highway_edges)}")
                 else:
                     print(f"[Highways] Optimization failed: {payload}")

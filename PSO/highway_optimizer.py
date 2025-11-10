@@ -1,7 +1,23 @@
 import math
+import heapq
 import numpy as np
 from pyswarms.single import GlobalBestPSO
 from spawn_utils import point_on_land, segment_intersects_any_polygon
+from collections import defaultdict
+from math import inf
+
+
+def layered_index_base(idx, N):
+    return idx if idx < N else idx - N
+
+
+def path_indices_to_xy(path_idxs, all_nodes):
+    N = len(all_nodes)
+    coords = []
+    for idx in path_idxs:
+        base = layered_index_base(idx, N)
+        coords.append(tuple(all_nodes[base]))
+    return coords
 
 
 def build_adjacency_layered(nodes, polygons, R, ports,
@@ -14,10 +30,13 @@ def build_adjacency_layered(nodes, polygons, R, ports,
     """
     N = len(nodes)
     adjacency_list = [[] for _ in range(2*N)]
+    weights = {}
 
     def add(u, v, cost):
-        adjacency_list[u].append((v, cost))
-        adjacency_list[v].append((u, cost))
+        adjacency_list[u].append(v)
+        weights[(u, v)] = cost
+        adjacency_list[v].append(u)
+        weights[(v, u)] = cost
 
     for i in range(N):
         for j in range(i+1, N):
@@ -37,7 +56,7 @@ def build_adjacency_layered(nodes, polygons, R, ports,
     for i in range(N):
         add(i, N + i, beta_switch)
 
-    return adjacency_list  # size 2N
+    return adjacency_list, weights  # size 2N
 
 
 def build_adjacency(nodes, polygons, radius):
@@ -54,27 +73,49 @@ def build_adjacency(nodes, polygons, radius):
     return adj
 
 
-def dijkstra(adj, src, dst):
-    import heapq
-    n = len(adj)
-    dist = [float('inf')]*n
-    dist[src] = 0.0
-    pq = [(0.0, src)]
+def dijkstra(graph, weight, s, t):
+    """
+    `graph`: an adjacency list (defaultdict(list))
+    `weight`: a dictionary where weight[(v, w)] is weight of the edge v -> w
+    """
+
+    pq = []
+    distances = defaultdict(lambda: inf)
+    distances[s] = 0
+    heapq.heappush(pq, (0, s))
+    edge_to = defaultdict(lambda: None)
+
     while pq:
-        d, u = heapq.heappop(pq)
-        if d > dist[u]:
+        current_dist, node = heapq.heappop(pq)
+
+        if node == t:
+
+            # Construct path
+            path = []
+            while node is not None:
+                path.append(node)
+                node = edge_to[node]
+            return current_dist, path[::-1]
+
+        if current_dist > distances[node]:
             continue
-        if u == dst:
-            return d
-        for v, w in adj[u]:
-            nd = d + w
-            if nd < dist[v]:
-                dist[v] = nd
-                heapq.heappush(pq, (nd, v))
-    return float('inf')
+
+        # Update distances for neighbors
+        for neighbor in graph[node]:
+            if (node, neighbor) not in weight:
+                print(f"Error: Missing weight for edge {node} -> {neighbor}")
+                continue
+            neighbor_dist = current_dist + weight[(node, neighbor)]
+
+            if neighbor_dist < distances[neighbor]:
+                distances[neighbor] = neighbor_dist
+                edge_to[neighbor] = node
+                heapq.heappush(pq, (neighbor_dist, neighbor))
+
+    return None, []
 
 
-def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty):
+def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, alpha_water, alpha_highway, beta_switch):
     '''
     Create cost function for PSO.
     Args:
@@ -101,11 +142,11 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
             nodes = np.vstack([ports_xy, highway_points])  # all nodes
 
             # Graph building handles isolated nodes
-            adj = build_adjacency_layered(nodes.tolist(), coastlines, R, ports, beta_switch=0.0, alpha_highway=0.1)
+            adj, weights = build_adjacency_layered(nodes.tolist(), coastlines, R, ports, alpha_water, alpha_highway, beta_switch)
 
             routing_cost = 0.0
             for (origin_index, destination_index, weight) in orders:
-                shortest_path = dijkstra(adj, origin_index, destination_index)
+                shortest_path, _ = dijkstra(adj, weights, origin_index, destination_index)
                 if math.isinf(shortest_path):
                     routing_cost += big_penalty
                 else:
@@ -118,7 +159,8 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
 
 def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
                       M=6, R=250.0, iters=120, particles=60,
-                      c1=1.4, c2=1.6, w=0.7, big_penalty=1e7):
+                      c1=1.4, c2=1.6, w=0.7, big_penalty=1e7,
+                      alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0):
     """
     Optiomize highway node positions using particle swarm optimization.
 
@@ -136,7 +178,7 @@ def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
     upper = np.tile(bbox_max, M)
     bounds = (lower, upper)
 
-    cost_function = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty)
+    cost_function = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, alpha_water, alpha_highway, beta_switch)
 
     optimizer = GlobalBestPSO(
         n_particles=particles,
@@ -148,14 +190,23 @@ def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
     best_cost, best_pos = optimizer.optimize(cost_function, iters=iters, verbose=verbose)
     highway_nodes = best_pos.reshape(M, 2)
 
-    # Build final graph (ports + highways) and edges for drawing
     all_nodes = np.vstack([np.array(ports_xy), highway_nodes])
-    adjacency_list = build_adjacency(all_nodes.tolist(), coastlines, R)
+    P = len(ports_xy)
 
+    adj_layered, weights = build_adjacency_layered(all_nodes.tolist(), coastlines, R, P, alpha_water, alpha_highway, beta_switch)
+
+    # single-layer adjacencies (all nodes (the white ones))
+    adjacency_list_single = build_adjacency(all_nodes.tolist(), coastlines, R)
     edges = []
-    for u, neighbors in enumerate(adjacency_list):
+    for u, neighbors in enumerate(adjacency_list_single):
         for v, weight in neighbors:
-            if u < v:  # to avoid duplicates
+            if u < v:
                 edges.append((u, v))
 
-    return highway_nodes, edges, best_cost, all_nodes
+    # Shortest path for each order
+    order_paths_xy = []
+    for (origin_idx, dest_idx, w) in orders:
+        dist, path = dijkstra(adj_layered, weights, origin_idx, dest_idx)
+        order_paths_xy.append(path_indices_to_xy(path, all_nodes))
+
+    return highway_nodes, edges, best_cost, all_nodes, order_paths_xy
