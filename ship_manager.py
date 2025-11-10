@@ -9,7 +9,7 @@ class ShipManager:
         self.ships = []
         self.show_ship_sensors = True
         self.screen = screen
-        self.send_ships_immidiately = False
+        self.send_ships_immidiately = True
 
     def get_route_between(self, routes, departure_port, destination_port):
         return routes.get((departure_port, destination_port))
