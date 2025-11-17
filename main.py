@@ -176,7 +176,7 @@ def main():
                             coastlines=coastlines,
                             bbox_min=bbox_min,
                             bbox_max=bbox_max,
-                            M=4,  # number of highway nodes
+                            M=2,  # number of highway nodes
                             R=800,  # Radius. TODO: use k-nearest (k = 6) instead?
                             iters=50,
                             particles=40,
@@ -185,6 +185,7 @@ def main():
                             alpha_water=1.0,
                             alpha_highway=0.3,
                             beta_switch=1.0,
+                            lambda_infrastructure=0.8,
                         )
                         optimize_cancel_event.clear()
                         optimizing = True

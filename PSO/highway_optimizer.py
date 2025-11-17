@@ -115,12 +115,13 @@ def dijkstra(graph, weight, s, t):
     return None, []
 
 
-def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, alpha_water, alpha_highway, beta_switch):
+def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, alpha_water, alpha_highway, beta_switch, lambda_infrastructure=0):
     '''
     Create cost function for PSO.
     Args:
         R: connection radius
         M: number of highway nodes
+        lambda_infrastructure: penalty per unit of built highway length.
     '''
 
     ports_xy = np.array(ports_xy)  # shape (P,2)
@@ -131,6 +132,8 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
 
         costs = np.zeros(X.shape[0], dtype=float)  # cost value for each particle
 
+        ports = ports_xy.shape[0]
+
         for k in range(X.shape[0]):
             highway_points = X[k].reshape(M, 2)
 
@@ -140,6 +143,7 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
             penalty = (is_out_of_bounds | onland).sum() * big_penalty
 
             nodes = np.vstack([ports_xy, highway_points])  # all nodes
+            N = len(nodes)
 
             # Graph building handles isolated nodes
             adj, weights = build_adjacency_layered(nodes.tolist(), coastlines, R, ports, alpha_water, alpha_highway, beta_switch)
@@ -152,7 +156,16 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
                 else:
                     routing_cost += weight * shortest_path
 
-            costs[k] = routing_cost + penalty
+            total_highway_length = 0.0
+
+            for (u, v), cost_uv in weights.items():
+                if u >= N and v >= N and u < v:
+                    segment_length = cost_uv / alpha_highway
+                    total_highway_length += segment_length
+
+            infra_cost = lambda_infrastructure * total_highway_length
+
+            costs[k] = routing_cost + penalty + infra_cost
         return costs
     return objective
 
@@ -160,7 +173,7 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
 def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
                       M=6, R=250.0, iters=120, particles=60,
                       c1=1.4, c2=1.6, w=0.7, big_penalty=1e7,
-                      alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0):
+                      alpha_water=1.0, alpha_highway=0.6, beta_switch=200.0, lambda_infrastructure=0.0):
     """
     Optiomize highway node positions using particle swarm optimization.
 
@@ -178,7 +191,8 @@ def optimize_highways(ports_xy, orders, coastlines, bbox_min, bbox_max,
     upper = np.tile(bbox_max, M)
     bounds = (lower, upper)
 
-    cost_function = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty, alpha_water, alpha_highway, beta_switch)
+    cost_function = objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, big_penalty,
+                                      alpha_water, alpha_highway, beta_switch, lambda_infrastructure)
 
     optimizer = GlobalBestPSO(
         n_particles=particles,
