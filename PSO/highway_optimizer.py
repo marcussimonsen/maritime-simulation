@@ -137,10 +137,8 @@ def objective_factory(ports_xy, orders, coastlines, bbox_min, bbox_max, M, R, bi
         for k in range(X.shape[0]):
             highway_points = X[k].reshape(M, 2)
 
-            # Bound check + on-land check
-            is_out_of_bounds = np.any((highway_points < bbox_min) | (highway_points > bbox_max), axis=1)
             onland = np.array([point_on_land(tuple(point), coastlines) for point in highway_points])
-            penalty = (is_out_of_bounds | onland).sum() * big_penalty
+            penalty = onland.sum() * big_penalty
 
             nodes = np.vstack([ports_xy, highway_points])  # all nodes
             N = len(nodes)
