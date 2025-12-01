@@ -111,7 +111,7 @@ def main():
     )
 
     def toggle_layer(show_toggle, ship_manager, show_graph, show_route):
-        show_toggle = (show_toggle + 1) % 3
+        show_toggle = (show_toggle + 1) % 4
 
         match show_toggle:
             case 0:
@@ -126,6 +126,9 @@ def main():
             case 2:
                 # only show route
                 show_route = not show_route
+            case 3:
+                # only show debug state
+                ship_manager.toggle_ship_sensors()
 
         return show_toggle, show_graph, show_route
     ###
@@ -255,27 +258,30 @@ def main():
         if show_graph:
             route_manager.draw_graph(graph, screen)
 
-        if highway_nodes is not None and all_nodes_for_draw is not None and highway_edges is not None:
-            for edge in highway_edges:
-                u, v = edge
-                start_pos = all_nodes_for_draw[u]
-                end_pos = all_nodes_for_draw[v]
-                pygame.draw.line(screen, (255, 255, 255), start_pos, end_pos, 3)
+        if show_route:
+            route_manager.draw_routes()
 
-            for node in highway_nodes:
-                pygame.draw.circle(screen, (255, 255, 255), (int(node[0]), int(node[1])), 5)
+            if highway_nodes is not None and all_nodes_for_draw is not None and highway_edges is not None:
+                for edge in highway_edges:
+                    u, v = edge
+                    start_pos = all_nodes_for_draw[u]
+                    end_pos = all_nodes_for_draw[v]
+                    pygame.draw.line(screen, (255, 255, 255), start_pos, end_pos, 3)
 
-            if order_paths_xy is not None:
-                for i, poly in enumerate(order_paths_xy):
-                    color = route_colors[i % len(route_colors)]
-                    for a, b in zip(poly, poly[1:]):
-                        pygame.draw.line(
-                            screen,
-                            color,
-                            (a[0], a[1]),
-                            (b[0], b[1]),
-                            5,
-                        )
+                for node in highway_nodes:
+                    pygame.draw.circle(screen, (255, 255, 255), (int(node[0]), int(node[1])), 5)
+
+                if order_paths_xy is not None:
+                    for i, poly in enumerate(order_paths_xy):
+                        color = route_colors[i % len(route_colors)]
+                        for a, b in zip(poly, poly[1:]):
+                            pygame.draw.line(
+                                screen,
+                                color,
+                                (a[0], a[1]),
+                                (b[0], b[1]),
+                                5,
+                            )
 
         if optimizing:
             font = pygame.font.SysFont(None, 24)
@@ -294,8 +300,7 @@ def main():
                     print(f"[Highways] Optimization failed: {payload}")
             except Exception:
                 pass
-        if show_route:
-            route_manager.draw_routes()
+        
 
         # Draw the UI last so it stays visible
         manager.update(dt)
