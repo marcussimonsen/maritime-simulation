@@ -14,18 +14,15 @@ plt.ion()
 class Wave2d(object):
     def __init__(self, param, defaults):
         self.ships = param      # Store list
-
-        # Each ship has its own wave packet (boat)
-        self.boats = []
-
-        # Fourier space is ship-independent → initialize once
-        self.set_fourier_space(param[0], defaults)
+        self.boats = []         # Each ship has its own wave packet (boat)
+        self.set_fourier_space(param[0], defaults)  # Fourier space is ship-independent → initialize once
 
         # Precompute wave packets for each ship
         for p in param:
             p.checkall() # måske slette?
             self.set_wave_packet(p, defaults)
             self.boats.append(self.hphi0.copy())
+            
 
     def set_fourier_space(self, param, defaults):
         fspace = fourier.Fourier(param, defaults)
@@ -154,83 +151,56 @@ class Wave2d(object):
                 ktio = 0
 
         energy = np.zeros((nt,))
-        for p in param:
-            for kt in range(nt):
-                energy[kt] += 0.5*np.mean(np.abs(self.hphi.ravel())**2)
-                self.hphi = self.hphi*propagator
+        
+        for kt in range(nt):
+            energy[kt] += 0.5*np.mean(np.abs(self.hphi.ravel())**2) # accumulate global energy
+            self.hphi = self.hphi*propagator                        # propagate the wave field
 
-                # if defaults['generation'] == 'wake':
+            
+            if kt == 1:
+                print("Max hphi after forcing:", np.max(np.abs(self.hphi)))
 
-                #     if hasattr(self, "traj"):
+            for i, p in enumerate(param):
+                # heading
+                kalpha = np.cos(p.alphaU)*kxx + np.sin(p.alphaU)*kyy
 
-                #         xb, yb = self.traj.get_position(time)
-                #         vx, vy = self.traj.get_velocity(time)
+                # ship position shift in Fourier domain
+                shift = np.exp(-1j*(kxx*p.x0 + kyy*p.y0))
 
-                #         kalpha = vx*kxx+vy*kyy
-                #         # recompute self.boat (complex Fourier amplitude)
-                #         # to account for the new heading
-                #         heading = np.angle(vx+1j*vy)
-                #         self.set_wave_packet(p, defaults, heading)
-                #         # shift the source at the boat location (xb,yb)
-                #         shift = np.exp(-1j*(kxx*xb+kyy*yb))
-                #         # add the source term to hphi
-                #         self.hphi -= 1j*dt*self.boat*kalpha*shift
-                #     else:
-                #         if kt == 0:
-                #             kalpha = np.cos(p.alphaU)*kxx + \
-                #                 np.sin(p.alphaU)*kyy
-                #         self.hphi -= (1j*1e2*dt*self.boat*defaults['U']*kalpha) * \
-                #             np.exp(-1j*(kxx*xb+kyy*yb))
-                #         xb += dt*defaults['U']*np.cos(p.alphaU)
-                #         yb += dt*defaults['U']*np.sin(p.alphaU)
-                # elif defaults['generation'] == 'oscillator':
-                #     self.hphi += (1e2*dt*self.boat)*np.exp(-1j*time*p.omega0)
-                
-                if kt == 1:
-                    print("Max hphi after forcing:", np.max(np.abs(self.hphi)))
+                # add forcing from this ship
+                self.hphi -= 1j * 1e2 * dt * self.boats[i] * defaults['U'] * kalpha * shift
+
+                # update ship position
+                p.x0 += dt * defaults['U'] * np.cos(p.alphaU)
+                p.y0 += dt * defaults['U'] * np.sin(p.alphaU)
 
 
-                for i, p in enumerate(param):
-                    # heading
-                    kalpha = np.cos(p.alphaU)*kxx + np.sin(p.alphaU)*kyy
+            kt += 1
+            time += dt
 
-                    # ship position shift in Fourier domain
-                    shift = np.exp(-1j*(kxx*p.x0 + kyy*p.y0))
+            if anim:
+                if (kt % kplot == 0):
+                    var = self.fspace.compute_all_variables(self.hphi)
+                    z2d = var[p.varplot]
+                    self.var = var
+                    if defaults['plotvector'] == 'velocity':
+                        self.plot.update(kt, time, z2d, u=var['u'], v=var['v'])
+                    elif defaults['plotvector'] == 'energyflux':
+                        self.plot.update(
+                            kt, time, z2d, u=var['up'], v=var['vp'])
+                    else:
+                        self.plot.update(kt, time, z2d)
 
-                    # add forcing from this ship
-                    self.hphi -= 1j * 1e2 * dt * self.boats[i] * defaults['U'] * kalpha * shift
+                    if p.netcdf:
+                        with Dataset(p.filename, "r+") as nc:
+                            nc.variables["time"][ktio] = time
+                            nc.variables["p"][ktio, :, :] = z2d
+                            for v in ["u", "v", "up", "vp"]:
+                                nc.variables[v][ktio, :, :] = var[v]
 
-                    # update ship position
-                    p.x0 += dt * defaults['U'] * np.cos(p.alphaU)
-                    p.y0 += dt * defaults['U'] * np.sin(p.alphaU)
-
-
-                kt += 1
-                time += dt
-
-                if anim:
-                    if (kt % kplot == 0):
-                        var = self.fspace.compute_all_variables(self.hphi)
-                        z2d = var[p.varplot]
-                        self.var = var
-                        if defaults['plotvector'] == 'velocity':
-                            self.plot.update(kt, time, z2d, u=var['u'], v=var['v'])
-                        elif defaults['plotvector'] == 'energyflux':
-                            self.plot.update(
-                                kt, time, z2d, u=var['up'], v=var['vp'])
-                        else:
-                            self.plot.update(kt, time, z2d)
-
-                        if p.netcdf:
-                            with Dataset(p.filename, "r+") as nc:
-                                nc.variables["time"][ktio] = time
-                                nc.variables["p"][ktio, :, :] = z2d
-                                for v in ["u", "v", "up", "vp"]:
-                                    nc.variables[v][ktio, :, :] = var[v]
-
-                                ktio += 1
-                else:
-                    print('\rkt=%i / %i' % (kt, nt), end='')
+                            ktio += 1
+            else:
+                print('\rkt=%i / %i' % (kt, nt), end='')
 
         var = self.fspace.compute_all_variables(self.hphi)
         self.energy = energy

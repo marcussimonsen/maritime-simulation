@@ -15,7 +15,7 @@ defaults = {'typewave': 'gwshort',
             'g': 1.,                            # Gravity
             'H': .1,                            # Water depth
             'sigma': float,                     # Ship length
-            'tend': 2,                          # How long the simulation runs
+            'tend': 5,                          # How long the simulation runs
             'tplot': .1,                        # Time intervale between two consecutive frames
             'dt': 1e-2,                         # Time step used in the computation
             'cax': np.asarray([-1., 1.])*20,    # Colorbar interval
@@ -23,7 +23,7 @@ defaults = {'typewave': 'gwshort',
             'plotvector': 'None',               #'energyflux'  # Vector field to superimpose during the animation
             'vectorscale': 10.,                 # Larger 'vectorscale' makes the arrows shorter
             'aspect_ratio': 4.,                 # For the ship, between x and y lengths
-            'U': 0.2,                           # Speed
+            'U': 0.1,                           # Speed
             'generation': 'wake'
             }
 
@@ -34,8 +34,8 @@ defaults['sigma'] = 0.01*defaults['Lx']
 # Ship 1
 ship1 = namelist.Namelist()
 ship1.alphaU = 0*np.pi/180.     # Heading (in degrees)
-ship1.x0 = 0.5
-ship1.y0 = 0.1                  # x coordinate of the wavepacket
+ship1.x0 = 0.4                  # x coordinate of the wavepacket
+ship1.y0 = 0.7                  
 ships.append(ship1)
 
 # Ship 2
@@ -48,8 +48,8 @@ ships.append(ship2)
 # Ship 3
 ship3 = namelist.Namelist()
 ship3.alphaU = 0*np.pi/180.
-ship3.x0 = 0.5
-ship3.y0 = 1.
+ship3.x0 = 0.45
+ship3.y0 = 0.7
 ships.append(ship3)
 
 
