@@ -1,7 +1,7 @@
 import pygame
 import math
 
-from reynold import separation, cohesion, alignment, kelvin_cohesion
+from reynold import separation, cohesion, alignment, kelvin_cohesion, line_cohesion
 import route
 
 TURN_FACTOR = .1
@@ -142,6 +142,7 @@ class Ship:
         alignment_vector = alignment(self, alignment_neighbors)
         cohesion_vector = cohesion(self, cohesion_neighbors)
         kelvin_vector = kelvin_cohesion(self, cohesion_neighbors, surface=surface)
+        line_vector = line_cohesion(self, cohesion_neighbors, surface=surface)
 
         self.vx += separation_vector[0] * SEPARATION_FACTOR
         self.vy += separation_vector[1] * SEPARATION_FACTOR
@@ -157,6 +158,11 @@ class Ship:
         if kelvin_vector is not None:
             self.vx += (kelvin_vector[0] - self.x) * COHESION_FACTOR
             self.vy += (kelvin_vector[1] - self.y) * COHESION_FACTOR
+
+        # if line_vector is not None:
+        #     self.vx += (line_vector[0] - self.x) * COHESION_FACTOR
+        #     self.vy += (line_vector[1] - self.y) * COHESION_FACTOR
+
 
     def follow_route(self, surface=None):
         if self.route is None:
