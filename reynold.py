@@ -62,6 +62,10 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         if vector_dot_product((ship.vx / sm, ship.vy / sm), ((other.x - ship.x) / om, (other.y - ship.y) / om)) - angle_offset <= 0:
             continue
 
+        # Do not try to follow ships without a route
+        if ship.route is not None and other.route is None:
+            continue
+
         # Check if ships are heading in same direction (less than 90 degrees difference)
         if vector_dot_product((ship.vx, ship.vy), (other.vx, other.vy)) <= 0:
             continue
