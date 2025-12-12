@@ -91,3 +91,32 @@ def segment_intersects_any_polygon(p, q, polygons):
                 return True
     return False
 
+
+def line_intersection(a1: int, b1: int, a2: int, b2: int) -> (int, int):
+    """Find intersection point between two lines"""
+    x = (b2 - b1) / (a1 - a2 + EPS)
+    y = a1 * x + b1
+
+    return x, y
+
+
+def line_from_points(p1: (int, int), p2: (int, int)) -> (int, int):
+    """Find line a, b from two points"""
+    x1, y1 = p1
+    x2, y2 = p2
+
+    a = (y2 - y1) / (x1 - x2 + EPS)
+    b = y1 - a * x1
+
+    return a, b
+
+
+def point_in_segment(p, p1, p2) -> bool:
+    """Returns whether the point p is on line defined by p1 and p2
+    Assumes p lies on the line defined by p1 and p2
+    """
+    x, y = p
+    x1, y1 = p1
+    x2, y2 = p2
+
+    return x >= min(x1, x2) and x <= max(x1, x2) and y >= min(y1, y2) and y <= max(y1, y2)
