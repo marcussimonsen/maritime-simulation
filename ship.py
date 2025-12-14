@@ -326,5 +326,5 @@ class Ship:
             self.destination = route.destination
         self.vx = 0
         self.vy = 0
-        self.x = route.path[-2][0] + random.random() * 20 - 10
-        self.y = route.path[-2][1] + random.random() * 20 - 10
+        self.x = route.path[-2][0] + random.random() * 10 - 5
+        self.y = route.path[-2][1] + random.random() * 10 - 5
