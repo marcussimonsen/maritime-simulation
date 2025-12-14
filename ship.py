@@ -1,8 +1,10 @@
 import pygame
 import math
+import time
 
-from reynold import separation, cohesion, alignment, kelvin_cohesion
+from reynold import separation, cohesion, alignment, kelvin_cohesion, line_cohesion
 import route
+from utils.math_utils import line_intersection, line_from_points, point_in_segment, distance, vector_dot_product
 
 TURN_FACTOR = .1
 COASTLINE_TURN_FACTOR = 0.1
@@ -24,6 +26,9 @@ COHESION_FACTOR = 0.05
 
 ROUTE_FACTOR = 0.0005
 ROUTE_WAYPOINT_DISTANCE = 40
+
+LINE_FOLLOW_TIME = 3
+LINE_FOLLOW_COASTLINE_THRESHOLD = 50
 
 
 def find_velocity(route, ship_position):
@@ -59,12 +64,6 @@ def is_point_inside_segment(line_p1, line_p2, p3):
     return is_x_inside or is_y_inside  # technically should be 'and', but shouldn't be a problem
 
 
-def distance(point_a, point_b):
-    ax, ay = point_a
-    bx, by = point_b
-    return math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
-
-
 class Ship:
     def __init__(self, x, y, route=None):
         self.x = x
@@ -74,6 +73,8 @@ class Ship:
         self.route = route
         self.destination = None
         self.departure = None
+        self.line_follow = False
+        self.line_follow_timeout = time.time()
 
     def set_route(self, route):
         self.route = route.copy()
@@ -83,7 +84,8 @@ class Ship:
         # Create a ship surface with the long axis along +X (nose to the right)
         ship_surf = pygame.Surface((SHIP_LENGTH, SHIP_WIDTH), pygame.SRCALPHA)
         # Draw the ship rect, get.rect() to fill the entire surface
-        pygame.draw.rect(ship_surf, "black", ship_surf.get_rect())
+        color = "red" if self.line_follow else "black"
+        pygame.draw.rect(ship_surf, color, ship_surf.get_rect())
 
         # Compute angle so the nose points along velocity (screen coords: y increases downward)
         if self.vx == 0 and self.vy == 0:
@@ -111,6 +113,51 @@ class Ship:
             self.vx += TURN_FACTOR
         if self.y < MARGIN:
             self.vy += TURN_FACTOR
+
+    def start_line_following(self, timeout):
+        self.line_follow = True
+        self.line_follow_timeout = timeout
+
+    def line_follow_check(self, coastlines, surface=None):
+        if self.line_follow:
+            return
+
+        theta = math.atan2(self.vy, self.vx)
+
+        sensor_x = math.cos(theta + math.pi / 2) * LINE_FOLLOW_COASTLINE_THRESHOLD
+        sensor_y = math.sin(theta + math.pi / 2) * LINE_FOLLOW_COASTLINE_THRESHOLD
+
+        sensor_global_x = self.x + sensor_x
+        sensor_global_y = self.y + sensor_y
+
+        if surface is not None:
+            pygame.draw.line(surface, "orange", (self.x, self.y), (self.x + sensor_x, self.y + sensor_y))
+            pygame.draw.line(surface, "orange", (self.x, self.y), (self.x - sensor_x, self.y - sensor_y))
+
+        a_r, b_r = line_from_points((self.x, self.y), (sensor_global_x, sensor_global_y))
+
+        coastline_right_close = False
+        coastline_left_close = False
+
+        for coastline in coastlines:
+            for p1, p2 in zip(coastline, coastline[1:]):
+                line_a, line_b = line_from_points(p1, p2)
+
+                intersection = line_intersection(a_r, b_r, line_a, line_b)
+
+                if distance((self.x, self.y), intersection) > LINE_FOLLOW_COASTLINE_THRESHOLD:
+                    continue
+                
+                if not point_in_segment(intersection, p1, p2):
+                    continue
+                
+                if vector_dot_product((intersection[0] - self.x, intersection[1] - self.y), (sensor_global_x - self.x, sensor_global_y - self.y)) > 0:
+                    coastline_right_close = True
+                else:
+                    coastline_left_close = True
+
+        if coastline_right_close and coastline_left_close:
+            self.start_line_following(time.time() + LINE_FOLLOW_TIME)
 
     def flocking(self, ships, surface=None):
         separation_neighbors = []
@@ -142,6 +189,7 @@ class Ship:
         alignment_vector = alignment(self, alignment_neighbors)
         cohesion_vector = cohesion(self, cohesion_neighbors)
         kelvin_vector = kelvin_cohesion(self, cohesion_neighbors, surface=surface)
+        line_vector = line_cohesion(self, cohesion_neighbors, surface=surface)
 
         self.vx += separation_vector[0] * SEPARATION_FACTOR
         self.vy += separation_vector[1] * SEPARATION_FACTOR
@@ -154,9 +202,22 @@ class Ship:
         #     self.vx += (cohesion_vector[0] - self.x) * COHESION_FACTOR
         #     self.vy += (cohesion_vector[1] - self.y) * COHESION_FACTOR
 
-        if kelvin_vector is not None:
-            self.vx += (kelvin_vector[0] - self.x) * COHESION_FACTOR
-            self.vy += (kelvin_vector[1] - self.y) * COHESION_FACTOR
+        if self.line_follow and time.time() < self.line_follow_timeout:
+            # Notify neighbors to also line follow
+            for neighbor in cohesion_neighbors:
+                if not neighbor.line_follow:
+                    neighbor.start_line_following(self.line_follow_timeout)
+
+            if line_vector is not None:
+                self.vx += (line_vector[0] - self.x) * COHESION_FACTOR
+                self.vy += (line_vector[1] - self.y) * COHESION_FACTOR
+        else:
+            if time.time() >= self.line_follow_timeout:
+                self.line_follow = False
+
+            if kelvin_vector is not None:
+                self.vx += (kelvin_vector[0] - self.x) * COHESION_FACTOR
+                self.vy += (kelvin_vector[1] - self.y) * COHESION_FACTOR
 
     def follow_route(self, surface=None):
         if self.route is None:

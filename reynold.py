@@ -48,10 +48,7 @@ def cohesion(ship, neighbors) -> tuple[float, float]|None:
         return None
 
 
-def kelvin_cohesion(ship, neighbors, surface=None):
-    angle_offset = 0.7
-    # Find closest neighbor that is in front
-    # Place current ship 35 degrees to the left or right behind the front ship and XX behind
+def find_ship_to_follow(ship, neighbors, angle_offset=0):
     closest_neighbor = None
     closest_dist = float('inf')
 
@@ -75,6 +72,14 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         if d < closest_dist:
             closest_dist = d
             closest_neighbor = other
+
+    return closest_neighbor
+
+
+def kelvin_cohesion(ship, neighbors, surface=None):
+    # Find closest neighbor that is in front
+    # Place current ship 35 degrees to the left or right behind the front ship and XX behind
+    closest_neighbor = find_ship_to_follow(ship, neighbors, angle_offset=0.7)
 
     if closest_neighbor is None:
         return None
@@ -124,6 +129,40 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         x, y =  x_r, y_r
 
     if surface is not None:
-        pygame.draw.circle(surface, "yellow", (x, y), 5)
+        pygame.draw.circle(surface, "yellow", (x, y), 3)
+
+    return x, y
+
+
+def line_cohesion(ship, neighbors, surface=None):
+    # Find closest neighbor that is in front
+    # Place current ship 35 degrees to the left or right behind the front ship and XX behind
+    closest_neighbor = find_ship_to_follow(ship, neighbors)
+
+    if closest_neighbor is None:
+        return None
+
+    # Angle of neighbors heading
+    theta_v = math.atan(closest_neighbor.vy / closest_neighbor.vx)
+    if closest_neighbor.vx > 0:
+        theta_v = theta_v + math.pi
+
+    # Hyperparameters for tuning Kelvin angle
+    dist = 20.
+
+    # x pos of follow point relative to neighbor ship
+    dx = math.cos(theta_v) * dist
+    # y pos of follow point relative to neighbor ship
+    dy = math.sin(theta_v) * dist
+
+    if surface is not None:
+        pygame.draw.line(surface, "red", (closest_neighbor.x, closest_neighbor.y), (closest_neighbor.x + dx, closest_neighbor.y + dy))
+
+    # right follow point (relative to neighbor)
+    x = closest_neighbor.x + dx
+    y = closest_neighbor.y + dy
+
+    if surface is not None:
+        pygame.draw.circle(surface, "yellow", (x, y), 3)
 
     return x, y
