@@ -85,7 +85,7 @@ class Ship:
         # Create a ship surface with the long axis along +X (nose to the right)
         ship_surf = pygame.Surface((SHIP_LENGTH, SHIP_WIDTH), pygame.SRCALPHA)
         # Draw the ship rect, get.rect() to fill the entire surface
-        color = "red" if self.line_follow else "black"
+        color = "red" if self.line_follow and debug_draw else "black"
         pygame.draw.rect(ship_surf, color, ship_surf.get_rect())
 
         # Compute angle so the nose points along velocity (screen coords: y increases downward)
