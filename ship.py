@@ -8,9 +8,9 @@ import route
 from utils.math_utils import line_intersection, line_from_points, point_in_segment, distance, vector_dot_product
 
 TURN_FACTOR = .1
-COASTLINE_TURN_FACTOR = 0.1
+COASTLINE_TURN_FACTOR = 0.01
 MARGIN = 0
-RANGE = 5
+RANGE = 15
 MAX_VELOCITY = .7
 # TODO: If ship velocity is this high, ship can clip through coastlines
 
@@ -29,7 +29,7 @@ ROUTE_FACTOR = 0.0005
 ROUTE_WAYPOINT_DISTANCE = 40
 
 LINE_FOLLOW_TIME = 3
-LINE_FOLLOW_COASTLINE_THRESHOLD = 50
+LINE_FOLLOW_COASTLINE_THRESHOLD = 70
 
 
 def find_velocity(route, ship_position):

@@ -79,7 +79,7 @@ def find_ship_to_follow(ship, neighbors, angle_offset=0):
 def kelvin_cohesion(ship, neighbors, surface=None):
     # Find closest neighbor that is in front
     # Place current ship 35 degrees to the left or right behind the front ship and XX behind
-    closest_neighbor = find_ship_to_follow(ship, neighbors, angle_offset=0.7)
+    closest_neighbor = find_ship_to_follow(ship, neighbors, angle_offset=0.1)
 
     if closest_neighbor is None:
         return None
@@ -91,7 +91,7 @@ def kelvin_cohesion(ship, neighbors, surface=None):
 
     # Hyperparameters for tuning Kelvin angle
     kelvin_distance = 30
-    kelvin_angle = 35
+    kelvin_angle = 50
 
     # Angle of follow points
     theta_l = theta_v + math.radians(kelvin_angle)
