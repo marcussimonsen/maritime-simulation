@@ -120,3 +120,10 @@ def point_in_segment(p, p1, p2) -> bool:
     x2, y2 = p2
 
     return x >= min(x1, x2) and x <= max(x1, x2) and y >= min(y1, y2) and y <= max(y1, y2)
+
+def normalize_vector(v):
+    mag = magnitude(v)
+    x, y = v
+    x /= mag
+    y /= mag
+    return x, y
