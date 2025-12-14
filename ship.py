@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+import random
 
 from reynold import separation, cohesion, alignment, kelvin_cohesion, line_cohesion
 import route
@@ -325,5 +326,5 @@ class Ship:
             self.destination = route.destination
         self.vx = 0
         self.vy = 0
-        self.x = route.path[-2][0]
-        self.y = route.path[-2][1]
+        self.x = route.path[-2][0] + random.random() * 20 - 10
+        self.y = route.path[-2][1] + random.random() * 20 - 10

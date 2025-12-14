@@ -90,7 +90,7 @@ def kelvin_cohesion(ship, neighbors, surface=None):
         theta_v = theta_v + math.pi
 
     # Hyperparameters for tuning Kelvin angle
-    kelvin_distance = 20.
+    kelvin_distance = 30
     kelvin_angle = 35
 
     # Angle of follow points
