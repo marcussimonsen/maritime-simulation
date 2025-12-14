@@ -96,8 +96,9 @@ def main():
 
     graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
-    ship_manager.spawn_random_ships(coastlines)
-    ports = get_hard_coded_ports_and_orders()
+    # ship_manager.spawn_random_ships(coastlines)
+    ports = []
+    # ports = get_hard_coded_ports_and_orders()
 
     ### Button ###
     btn_toggle_layer_size = 45
