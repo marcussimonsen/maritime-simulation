@@ -148,12 +148,12 @@ def line_cohesion(ship, neighbors, surface=None):
         theta_v = theta_v + math.pi
 
     # Hyperparameters for tuning Kelvin angle
-    dist = 20.
+    tandem_distance = 20.
 
     # x pos of follow point relative to neighbor ship
-    dx = math.cos(theta_v) * dist
+    dx = math.cos(theta_v) * tandem_distance
     # y pos of follow point relative to neighbor ship
-    dy = math.sin(theta_v) * dist
+    dy = math.sin(theta_v) * tandem_distance
 
     if surface is not None:
         pygame.draw.line(surface, "red", (closest_neighbor.x, closest_neighbor.y), (closest_neighbor.x + dx, closest_neighbor.y + dy))
