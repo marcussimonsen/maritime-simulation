@@ -92,7 +92,7 @@ def main():
     capacities = [10, 20, 30]
     capacity_index = 0
 
-    coastlines = svg_to_points('coastlines/svg/islands.svg', step=40, scale=1.2)
+    coastlines = svg_to_points('coastlines/svg/islands.svg', step=10, scale=1.2)
 
     graph, weights = route_manager.create_ocean_graph(coastlines, screen, grid_gap=20, min_dist=20)
 
